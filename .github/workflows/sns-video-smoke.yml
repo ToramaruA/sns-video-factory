@@ -1,0 +1,54 @@
+name: SNS Video Factory - offline MulmoCast smoke test
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/sns-video-smoke.yml'
+      - 'experiments/01-merge-smoke/**'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sns-video-smoke.yml'
+      - 'experiments/01-merge-smoke/**'
+
+permissions:
+  contents: read
+
+jobs:
+  merge-two-videos:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # Explicitly blank AI provider secrets; no generative-AI calls are needed.
+      OPENAI_API_KEY: ''
+      GEMINI_API_KEY: ''
+      REPLICATE_API_TOKEN: ''
+      ANTHROPIC_API_KEY: ''
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node 24
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg python3
+          npm install -g yarn@1.22.22
+          yarn install --frozen-lockfile
+      - name: Build MulmoCast
+        run: yarn build
+      - name: Generate clips and render via MulmoCast
+        run: bash experiments/01-merge-smoke/run_mulmo.sh
+      - name: Upload videos for inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sns-video-merge-test
+          path: |
+            output/*.mp4
+            experiments/01-merge-smoke/output/*.mp4
+          if-no-files-found: warn
+          retention-days: 3
