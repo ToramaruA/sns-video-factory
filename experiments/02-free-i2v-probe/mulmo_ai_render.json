@@ -1,0 +1,35 @@
+{
+  "$mulmocast": { "version": "1.1" },
+  "title": "AI-generated I2V clip in MulmoCast",
+  "lang": "ja",
+  "canvasSize": { "width": 720, "height": 1280 },
+  "audioParams": {
+    "suppressSpeech": true,
+    "introPadding": 0,
+    "padding": 0,
+    "closingPadding": 0,
+    "outroPadding": 0,
+    "bgmVolume": 0,
+    "audioVolume": 0
+  },
+  "beats": [
+    {
+      "id": "actual_wan22_i2v",
+      "text": "",
+      "duration": 2,
+      "image": {
+        "type": "movie",
+        "source": { "kind": "path", "path": "./assets/wan22_probe.mp4" }
+      }
+    },
+    {
+      "id": "local_outro",
+      "text": "",
+      "duration": 2,
+      "image": {
+        "type": "movie",
+        "source": { "kind": "path", "path": "./assets/outro.mp4" }
+      }
+    }
+  ]
+}
