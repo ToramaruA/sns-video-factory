@@ -29,7 +29,7 @@
 - [x] `src/actions/images.ts`、`src/agents/`、`src/actions/movie.ts`、MulmoScript v1.1の主要仕様を確認
 - [x] PR [#1](https://github.com/ToramaruA/sns-video-factory/pull/1) にローカルMP4×2本をMulmoCastで結合するテストを追加
 - [x] PR #1の**専用Actionsが成功**。6秒、720x1280、シーンの違いをチェック
-- [ ] PR #1全体のチェックを確認したうえでマージ（現段階で自動マージしない）
+- [x] PR #1のNode.js CIも成功を確認し、**2026-11-15にmainへマージ**
 - [ ] 元MulmoCastのCI全体の負荷を把握し、不要な大量実行を避ける案を検討
 
 **達成基準:** 元のエンジンでMP4結合が無料・再現可能に動くこと。※画像→動画AIを検証したことにはならない。
