@@ -1,0 +1,42 @@
+name: SNS Video Factory - single free I2V probe
+
+# One opt-in experiment only, triggered when this workflow file is initially pushed
+# on its feature branch. Never run on a schedule, on main, or on every PR.
+on:
+  push:
+    branches:
+      - feat/wan22-zerogpu-probe
+    paths:
+      - .github/workflows/sns-video-zerogpu-probe.yml
+
+permissions:
+  contents: read
+
+jobs:
+  zero-gpu-anonymous-probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      HF_TOKEN: ''
+      HUGGING_FACE_HUB_TOKEN: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install client packages
+        run: |
+          python -m pip install --disable-pip-version-check 'gradio_client==2.7.2' 'Pillow>=11,<13'
+          ffprobe -version | head -n 1
+      - name: Generate original test still image
+        run: python experiments/02-free-i2v-probe/make_test_image.py
+      - name: Submit one anonymous i2v job and check MP4
+        run: python experiments/02-free-i2v-probe/run_probe.py
+      - name: Upload test image, report and any generated MP4
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wan22-zerogpu-single-probe
+          path: experiments/02-free-i2v-probe/output/
+          if-no-files-found: warn
+          retention-days: 3
