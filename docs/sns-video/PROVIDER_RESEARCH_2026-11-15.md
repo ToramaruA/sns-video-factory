@@ -37,6 +37,15 @@
 - 利用した画像はテスト用にPythonで独自作成。有料APIキー・HF認証・リトライはなし。
 - **未達:** MulmoCastの生成Agentから直接呼び出すこと。モデルの可用性を連日測ること。共有アプリとしての利用条件の追加確認。
 
+## MulmoCast本体との結合実験（追加検証）
+
+- [GitHub Actions run 43623282651](https://github.com/ToramaruA/sns-video-factory/actions/runs/43623282651) にて、**先ほど生成したAIの実MP4を、再生成せずに**アーティファクトからダウンロード。
+- `mulmo_ai_render.json` の第1カットにWan 2.2の実動画、第2カットにFFmpeg製のダミー後半カットを配置。
+- MulmoCast本体で結合・書き出しに成功。最終ファイルは**720×1280 / 30fps / 122フレーム / 4.0667秒**、映像H.264＋音声AAC。ローカルFFprobeで解析し、FFmpegによる全ファイルのデコードも成功。
+- 保存先: GitHub Actionsの `wan22-mulmocast-render` アーティファクト（有効期限あり）。
+- SHA-256: `f58cca5e260f952d100d67feeb7f789d42c05714f53bf7d28c2959dbb10663b4`
+- ここで検証したのは**外部生成したMP4をMulmoCastに入力する接続経路**。MulmoCastの`movieGenerator`内部にZeroGPU専用Agentを登録したわけではない。そちらは次段階。
+
 ## この実証から分かったこと
 
 **できると確認したこと**
