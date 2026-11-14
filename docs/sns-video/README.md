@@ -37,6 +37,7 @@
 | [DSL_AND_DATA.md](./DSL_AND_DATA.md) | MulmoScriptの使い方・独自の制作管理データ・カットの再生成 |
 | [COST_SECURITY_AND_OPERATIONS.md](./COST_SECURITY_AND_OPERATIONS.md) | 無料運用、モデル選定、安全性、著作権、アクセス制御、運用 |
 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) | 段階ごとの実装・検証基準、作業優先順位、未決事項 |
+| [PROVIDER_RESEARCH_2026-11-15.md](./PROVIDER_RESEARCH_2026-11-15.md) | 無料画像→動画の候補比較とWan 2.2による実生成結果 |
 
 ## 状況（2026-11-15時点）
 
