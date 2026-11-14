@@ -1,0 +1,54 @@
+name: SNS Video Factory - render saved AI clip in MulmoCast
+
+# One-time branch test. Uses previously saved AI output; ZERO further AI calls.
+on:
+  push:
+    branches:
+      - feat/wan22-zerogpu-probe
+    paths:
+      - .github/workflows/sns-video-render-saved-ai.yml
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  render-saved-ai-mp4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      OPENAI_API_KEY: ''
+      GEMINI_API_KEY: ''
+      REPLICATE_API_TOKEN: ''
+      ANTHROPIC_API_KEY: ''
+      HF_TOKEN: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install FFmpeg and Yarn, build original MulmoCast
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg python3
+          npm install -g yarn@1.22.22
+          yarn install --frozen-lockfile
+          yarn build
+      - name: Retrieve the single previously generated MP4
+        uses: actions/download-artifact@v4
+        with:
+          name: wan22-zerogpu-single-probe
+          run-id: 43622599531
+          repository: ToramaruA/sns-video-factory
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path: experiments/02-free-i2v-probe/output
+      - name: Render saved real AI video using MulmoCast
+        run: bash experiments/02-free-i2v-probe/render_saved_clip.sh
+      - name: Upload rendered MP4
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wan22-mulmocast-render
+          path: output/mulmo_ai_render_ja.mp4
+          if-no-files-found: warn
+          retention-days: 3
