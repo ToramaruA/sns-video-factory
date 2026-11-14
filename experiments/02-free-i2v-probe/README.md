@@ -1,6 +1,6 @@
 # Phase 1 — one-shot image-to-video experiment (Wan 2.2 + ZeroGPU)
 
-**Status: a test, NOT a production provider.** This does not mean a persistent free API or commercial third-party hosting rights are guaranteed.
+**Status: ONE anonymous inference succeeded (2026-11-15 JST), but NOT a production provider.** This does not guarantee persistent free API access or commercial third-party hosting rights.
 
 This directory probes the public Gradio API for:
 - Space: https://huggingface.co/spaces/zerogpu-aoti/wan2-2-fp8da-aoti-faster
@@ -19,7 +19,7 @@ The script submits **exactly one** inference request. No API token, no paid plan
 
 ## How to run
 
-In GitHub Actions, this experiment only auto-runs once when the probe workflow file is first pushed to its experiment branch. There is no recurring trigger. It is deliberately separated from the existing MulmoCast CI.
+The initial branch-push workflow executed exactly one anonymous request and received an MP4. It reported failure only because `ffprobe` was absent on that GitHub runner. The artifact was downloaded and verified independently. The workflow has now been switched to **manual-only** (`workflow_dispatch`), with FFmpeg installation and a pre-flight `ffprobe` check to avoid wasting a second GPU request.
 
 Locally on a machine with network access (not necessarily GPU):
 ```sh
@@ -46,3 +46,15 @@ You also need `ffprobe` available in PATH. **Do not run repeatedly to get around
 - Space's own `app.py` exposes `/generate_video` through a Gradio UI and outputs MP4 at 16 fps; endpoint parameters can change.
 
 This experiment uses GitHub-hosted Python only as the **API client**. The GPU inference runs at Hugging Face, not GitHub Actions.
+
+## Confirmed result of first real inference (2026-11-15 JST)
+
+- [GitHub Actions initial run](https://github.com/ToramaruA/sns-video-factory/actions/runs/43622599531): failed **after MP4 generation** because `ffprobe` was not installed, not because the AI rejected the request.
+- [Original artifact](https://github.com/ToramaruA/sns-video-factory/actions/runs/43622599531): `wan22-zerogpu-single-probe` (expires per Actions retention policy).
+- The actual generated file from the artifact was inspected with local `ffprobe` and fully decoded with FFmpeg: **H.264, 560×832, 16 fps, 33 frames, 2.0625 seconds, 166,335 bytes**.
+- SHA-256: `7cfcd1c9358651e07d5e0c0fbb44ef9d03066ce072305e94d5a74a68d794837e`.
+- Sampling at ~0.2s and ~1.8s found mean RGB absolute differences of approximately `[31.6,20.5,22.9]` (33.8% of pixels differed by luminance >15). The result visibly animated the rocket and plume.
+- No access token, paid API, or retry was used.
+- **Not yet completed:** running via MulmoCast's actual movie agent; provider adapter; sustained reliability/quotas; hosting terms for a multiuser commercial app.
+
+This is positive evidence for **technical image→video feasibility only**.
