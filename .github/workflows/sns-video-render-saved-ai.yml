@@ -1,12 +1,14 @@
 name: SNS Video Factory - render saved AI clip in MulmoCast
 
-# One-time branch test. Uses previously saved AI output; ZERO further AI calls.
+# Manual test only; uses an existing image-to-video artifact, ZERO new AI calls.
+# The caller provides the run ID because artifacts expire after 3 days.
 on:
-  push:
-    branches:
-      - feat/wan22-zerogpu-probe
-    paths:
-      - .github/workflows/sns-video-render-saved-ai.yml
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'GitHub Actions run ID with wan22-zerogpu-single-probe artifact'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -38,7 +40,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: wan22-zerogpu-single-probe
-          run-id: 43622599531
+          run-id: ${{ inputs.source_run_id }}
           repository: ToramaruA/sns-video-factory
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: experiments/02-free-i2v-probe/output
