@@ -76,6 +76,8 @@ def main() -> int:
             raise RuntimeError("HF token present: anonymous free-only probe refuses to run")
         if not INPUT.is_file():
             raise RuntimeError("Input image missing. Run make_test_image.py first.")
+        if shutil.which("ffprobe") is None:
+            raise RuntimeError("ffprobe missing; refusing inference before video validation is available")
         from gradio_client import Client, handle_file
 
         client = Client(SPACE, verbose=False)
