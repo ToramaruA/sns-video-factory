@@ -1,0 +1,35 @@
+{
+  "$mulmocast": { "version": "1.1" },
+  "title": "SNS video smoke test - two supplied MP4 clips",
+  "lang": "ja",
+  "canvasSize": { "width": 720, "height": 1280 },
+  "audioParams": {
+    "suppressSpeech": true,
+    "introPadding": 0,
+    "padding": 0,
+    "closingPadding": 0,
+    "outroPadding": 0,
+    "bgmVolume": 0,
+    "audioVolume": 0
+  },
+  "beats": [
+    {
+      "id": "shot_01",
+      "text": "",
+      "duration": 3,
+      "image": {
+        "type": "movie",
+        "source": { "kind": "path", "path": "./assets/shot_01.mp4" }
+      }
+    },
+    {
+      "id": "shot_02",
+      "text": "",
+      "duration": 3,
+      "image": {
+        "type": "movie",
+        "source": { "kind": "path", "path": "./assets/shot_02.mp4" }
+      }
+    }
+  ]
+}
