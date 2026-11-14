@@ -44,7 +44,7 @@
 |---|---|
 | 既存MulmoCastの構造・DSL調査 | **ソース確認済み** |
 | フォーク | **完了**（このリポジトリ） |
-| ローカルMP4を2本結合するMulmoCastのテスト | **PR [#1](../../pull/1) の専用GitHub Actionsで成功**。PRのマージ状況や元の大規模CIとは区別 |
+| ローカルMP4を2本結合するMulmoCastのテスト | **PR [#1](https://github.com/ToramaruA/sns-video-factory/pull/1) の専用GitHub Actionsで成功**。PRのマージ状況や元の大規模CIとは区別 |
 | 継続無料の画像→動画モデルの外部接続 | **未検証** |
 | AIディレクター、生成先自動切替、承認ワークフロー | **未実装** |
 | Web UI、共有ログイン、データベース、永続ストレージ | **未実装** |
