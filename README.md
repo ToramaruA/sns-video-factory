@@ -1,3 +1,10 @@
+> **このフォークについて（SNS Video Factory）**  
+> このリポジトリは、MulmoCastをベースに「企画→カットごとの画像生成→画像から動画生成→承認→結合」を行うSNS動画制作ツールを開発するためのフォークです。  
+> **[SNS Video Factory の設計書・進捗・実装計画はこちら](./docs/sns-video/README.md)**  
+> 継続無料で利用可能な動画生成AIはまだ実証中です。下記はフォーク元MulmoCastのREADMEです。
+
+---
+
 # MulmoCast: A Multi-Modal Presentation Tool for the AI-Native Era
 
 [![npm version](https://badge.fury.io/js/mulmocast.svg)](https://www.npmjs.com/package/mulmocast)
