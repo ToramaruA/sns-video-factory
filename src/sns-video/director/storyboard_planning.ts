@@ -118,10 +118,10 @@ const copyAndValidateProposal = (proposal: StoryboardProposal, brief: VideoBrief
   return { ...proposal, shots };
 };
 
-/** At least two alternative concepts are required before selection. */
+/** One approved concept is sufficient; alternatives may be added when useful. */
 export const createStoryboardPlanningState = (brief: VideoBrief, proposals: readonly StoryboardProposal[]): StoryboardPlanningState => {
   const snapshot = copyAndValidateBrief(brief);
-  if (proposals.length < 2) throw new Error("Planning requires at least two proposed concepts");
+  if (proposals.length < 1) throw new Error("Planning requires at least one proposed concept");
   const seen = new Set<string>();
   const candidates = proposals.map((proposal) => {
     const candidate = copyAndValidateProposal(proposal, snapshot);
