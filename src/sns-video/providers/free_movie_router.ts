@@ -5,12 +5,7 @@
  * retry, or silently falls back to an unknown/paid provider. Future adapters
  * can be registered by adding another FreeVideoProvider entry.
  */
-export type FreeVideoErrorCode =
-  | "missing_image"
-  | "unknown_provider"
-  | "free_route_not_approved"
-  | "unsupported_capability"
-  | "no_compatible_free_provider";
+export type FreeVideoErrorCode = "missing_image" | "unknown_provider" | "free_route_not_approved" | "unsupported_capability" | "no_compatible_free_provider";
 
 export class FreeVideoProviderError extends Error {
   constructor(
@@ -59,10 +54,7 @@ export type FreeVideoRequest = {
  * Rejects unsupported inputs instead of dropping them from an API request.
  * Does not retry other providers after a generation error.
  */
-export const selectFreeVideoProvider = (
-  candidates: readonly FreeVideoProvider[],
-  request: FreeVideoRequest,
-): FreeVideoProvider => {
+export const selectFreeVideoProvider = (candidates: readonly FreeVideoProvider[], request: FreeVideoRequest): FreeVideoProvider => {
   if (!request.hasFirstFrame) {
     throw new FreeVideoProviderError("missing_image", "Free image-to-video generation requires an existing still image");
   }
@@ -82,19 +74,18 @@ export const selectFreeVideoProvider = (
 
   const compatible = enabled.find((p) => {
     const c = p.capabilities;
-    return c.imageToVideo &&
+    return (
+      c.imageToVideo &&
       (!request.model || p.model === request.model) &&
       c.durationsSeconds.includes(request.durationSeconds) &&
       (!request.hasLastFrame || c.lastFrame) &&
       (!request.hasReferenceImages || c.referenceImages) &&
       (!request.hasReferenceVideo || c.referenceVideo) &&
-      (!request.generateAudio || c.generatedAudio);
+      (!request.generateAudio || c.generatedAudio)
+    );
   });
   if (!compatible) {
-    throw new FreeVideoProviderError(
-      "no_compatible_free_provider",
-      "No enabled free provider supports all requested image-to-video capabilities",
-    );
+    throw new FreeVideoProviderError("no_compatible_free_provider", "No enabled free provider supports all requested image-to-video capabilities");
   }
   return compatible;
 };

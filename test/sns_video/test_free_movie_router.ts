@@ -1,16 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 
-import {
-  FreeVideoProviderError,
-  selectFreeVideoProvider,
-  type FreeVideoProvider,
-} from "../../src/sns-video/providers/free_movie_router.js";
-import {
-  getWan22FreeProvider,
-  WAN22_FREE_PROVIDER_ID,
-  WAN22_FREE_MODEL,
-} from "../../src/agents/movie_wan22_zerogpu_agent.js";
+import { FreeVideoProviderError, selectFreeVideoProvider, type FreeVideoProvider } from "../../src/sns-video/providers/free_movie_router.js";
+import { getWan22FreeProvider, WAN22_FREE_PROVIDER_ID, WAN22_FREE_MODEL } from "../../src/agents/movie_wan22_zerogpu_agent.js";
 import { movieFreeRouterAgent } from "../../src/agents/movie_free_router_agent.js";
 import { provider2MovieAgent } from "../../src/types/provider2agent.js";
 import { mulmoScriptSchema } from "../../src/types/schema.js";
@@ -57,9 +49,12 @@ test("paid and unknown-billing providers can never be selected", () => {
 test("unsupported reference images, last frame, audio, length are rejected instead of ignored", () => {
   const wan = enabledWan();
   for (const unsupported of [
-    { hasLastFrame: true }, { hasReferenceImages: true },
-    { hasReferenceVideo: true }, { generateAudio: true },
-    { durationSeconds: 5 }, { model: "not-supported" },
+    { hasLastFrame: true },
+    { hasReferenceImages: true },
+    { hasReferenceVideo: true },
+    { generateAudio: true },
+    { durationSeconds: 5 },
+    { model: "not-supported" },
   ]) {
     assert.throws(
       () => selectFreeVideoProvider([wan], { ...request, ...unsupported }),
@@ -94,11 +89,15 @@ test("MulmoScript v1.1 accepts free_i2v route and local input image", () => {
     canvasSize: { width: 720, height: 1280 },
     audioParams: { suppressSpeech: true, introPadding: 0, padding: 0, closingPadding: 0, outroPadding: 0 },
     movieParams: { provider: "free_i2v", model: "auto-free", concurrency: 1 },
-    beats: [{
-      id: "shot_01", text: "", duration: 2,
-      image: { type: "image", source: { kind: "path", path: "./assets/input.png" } },
-      moviePrompt: "The rocket rises into the sky",
-    }],
+    beats: [
+      {
+        id: "shot_01",
+        text: "",
+        duration: 2,
+        image: { type: "image", source: { kind: "path", path: "./assets/input.png" } },
+        moviePrompt: "The rocket rises into the sky",
+      },
+    ],
   });
   assert.equal(result.success, true, result.success ? "" : JSON.stringify(result.error.issues));
 });
@@ -114,10 +113,11 @@ test("shared movie agent cannot invoke an external service if experimental route
       params: { model: string; canvasSize: { width: number; height: number }; duration: number };
     }) => Promise<unknown>;
     await assert.rejects(
-      () => invoke({
-        namedInputs: { imagePath: "/does/not/exist.png", prompt: "test", movieFile: "/nothing.mov" },
-        params: { model: "auto-free", canvasSize: { width: 720, height: 1280 }, duration: 2 },
-      }),
+      () =>
+        invoke({
+          namedInputs: { imagePath: "/does/not/exist.png", prompt: "test", movieFile: "/nothing.mov" },
+          params: { model: "auto-free", canvasSize: { width: 720, height: 1280 }, duration: 2 },
+        }),
       (err: unknown) => err instanceof FreeVideoProviderError && err.code === "free_route_not_approved",
     );
   } finally {

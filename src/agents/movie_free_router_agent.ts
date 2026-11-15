@@ -1,12 +1,7 @@
 import type { AgentFunction, AgentFunctionInfo } from "graphai";
 import type { AgentBufferResult, GoogleMovieAgentParams, MovieAgentInputs } from "../types/agent.js";
 import { selectFreeVideoProvider } from "../sns-video/providers/free_movie_router.js";
-import {
-  getWan22FreeProvider,
-  movieWan22ZeroGpuAgent,
-  WAN22_FREE_PROVIDER_ID,
-  WAN22_FREE_MODEL,
-} from "./movie_wan22_zerogpu_agent.js";
+import { getWan22FreeProvider, movieWan22ZeroGpuAgent, WAN22_FREE_PROVIDER_ID, WAN22_FREE_MODEL } from "./movie_wan22_zerogpu_agent.js";
 
 /**
  * The common MulmoCast entry point for free-only image-to-video.
@@ -15,12 +10,7 @@ import {
  * Candidate order defines preference. The selector NEVER invokes paid or
  * unknown-billing routes, and there is NO automatic retry on generation errors.
  */
-export const movieFreeRouterAgent: AgentFunction<
-  GoogleMovieAgentParams,
-  AgentBufferResult,
-  MovieAgentInputs,
-  Record<string, never>
-> = async (args) => {
+export const movieFreeRouterAgent: AgentFunction<GoogleMovieAgentParams, AgentBufferResult, MovieAgentInputs, Record<string, never>> = async (args) => {
   const { namedInputs, params } = args;
   const model = params.model === "auto-free" ? undefined : params.model;
   const chosen = selectFreeVideoProvider([getWan22FreeProvider()], {

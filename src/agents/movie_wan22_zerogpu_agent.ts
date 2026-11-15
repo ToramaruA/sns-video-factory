@@ -89,8 +89,17 @@ const callPythonBridge = async (script: string, request: unknown, workingDir: st
         }
         resolve(response);
       } catch (error) {
-        reject(new Error("Wan2.2 bridge failed without a valid success response: " +
-          (error instanceof Error ? error.message : String(error)) + " (exit " + String(code) + "; stderr length " + stderr.length + ")"));
+        reject(
+          new Error(
+            "Wan2.2 bridge failed without a valid success response: " +
+              (error instanceof Error ? error.message : String(error)) +
+              " (exit " +
+              String(code) +
+              "; stderr length " +
+              stderr.length +
+              ")",
+          ),
+        );
       }
     });
     child.stdin.on("error", () => {
@@ -103,12 +112,10 @@ const callPythonBridge = async (script: string, request: unknown, workingDir: st
 let startedCalls = 0;
 
 /** Return a buffer for MulmoCast's existing movie cache and final render logic. */
-export const movieWan22ZeroGpuAgent: AgentFunction<
-  GoogleMovieAgentParams,
-  AgentBufferResult,
-  MovieAgentInputs,
-  Record<string, never>
-> = async ({ namedInputs, params }) => {
+export const movieWan22ZeroGpuAgent: AgentFunction<GoogleMovieAgentParams, AgentBufferResult, MovieAgentInputs, Record<string, never>> = async ({
+  namedInputs,
+  params,
+}) => {
   const imagePath = namedInputs.imagePath;
   const requestedDuration = params.duration ?? 2;
 
@@ -144,13 +151,17 @@ export const movieWan22ZeroGpuAgent: AgentFunction<
   const outputFile = join(workingDir, "generated.mp4");
   try {
     const script = fileURLToPath(new URL("../../src/sns-video/providers/wan22_zerogpu_client.py", import.meta.url));
-    const result = await callPythonBridge(script, {
-      image_path: imagePath,
-      output_path: outputFile,
-      prompt: namedInputs.prompt,
-      model: WAN22_FREE_MODEL,
-      duration_seconds: requestedDuration,
-    }, workingDir);
+    const result = await callPythonBridge(
+      script,
+      {
+        image_path: imagePath,
+        output_path: outputFile,
+        prompt: namedInputs.prompt,
+        model: WAN22_FREE_MODEL,
+        duration_seconds: requestedDuration,
+      },
+      workingDir,
+    );
     if (result.output_path !== outputFile) {
       throw new Error("Wan2.2 bridge returned an unexpected output path");
     }
