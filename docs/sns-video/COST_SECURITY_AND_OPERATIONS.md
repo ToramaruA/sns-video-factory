@@ -4,6 +4,12 @@
 
 ## 1. 最優先要件：勝手に課金しない
 
+**2026-11-15追加:** 無料Tierのある公式APIは利用してよい。既存MulmoCastのGraphAI/LLM Agentを優先して再利用する。無料APIと有料APIの違いは**モデル名だけでなく、実際の契約Tier・接続経路・アカウント設定**で確認する。有料Tierへの自動移行や既定OpenAIへのフォールバックを禁止。元MulmoCastの `llmPair` は無指定時にOpenAIになるため、Web APIからは無料許可リストを通らない設定を拒否する。
+
+**無料APIに入力するデータ:** 提供元のプライバシー条件をユーザーへ説明する。Gemini APIの無料枠では入力内容がサービス改善に使われ得るため、未公開の写真・顧客情報等を送る前に利用条件の確認と必要な同意が必要。参考：[Gemini公式料金・Tier](https://ai.google.dev/gemini-api/docs/pricing)、[Groq公式無料Tier](https://console.groq.com/docs/billing-faqs)。
+
+ChatGPT/Claude等の外部AIで相談した内容を貼り付ける使い方には、特殊な書き出し形式を要求しない。
+
 原則は**fail closed（不明なら生成を実行しない）**。
 
 - 料金が不明なAPIは自動実行しない。
