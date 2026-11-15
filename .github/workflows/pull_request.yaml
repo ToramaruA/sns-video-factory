@@ -10,6 +10,21 @@ on:
   push:
     branches:
       - main
+  # The fork runs a compact Linux check by default. The full upstream matrix
+  # remains available to launch deliberately when cross-platform testing is needed.
+  workflow_dispatch:
+    inputs:
+      full_matrix:
+        description: 'Run upstream full cross-platform/e2e matrix (39 jobs)'
+        required: false
+        type: boolean
+        default: false
+
+# Superseded PR commits should not run expensive jobs or send stale failure
+# notifications. Pull requests use their number so all commits share one group.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -20,6 +35,7 @@ env:
 
 jobs:
   lint_test:
+    if: github.repository_owner == 'receptron' || (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -68,6 +84,7 @@ jobs:
   # today would block every unrelated PR; leaving it unmeasured lets it grow silently. The
   # count in the job summary is the middle ground until the backlog is cleared (issue #1551).
   typecheck_tests:
+    if: github.repository_owner == 'receptron' || (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
     name: typecheck test/ (warn, non-blocking)
     runs-on: ubuntu-latest
     steps:
@@ -105,6 +122,7 @@ jobs:
         } >> "$GITHUB_STEP_SUMMARY"
 
   lint_test_cross_platform:
+    if: github.repository_owner == 'receptron' || (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -140,6 +158,7 @@ jobs:
     - run: yarn ci_test
 
   e2e:
+    if: github.repository_owner == 'receptron' || (github.event_name == 'workflow_dispatch' && inputs.full_matrix)
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -200,3 +219,36 @@ jobs:
       with:
         name: generatedmedia-${{ matrix.node-version }}-${{ matrix.shard.name }}
         path: output/
+
+  # This fork is developing a free-only SNS video product, not publishing all of
+  # upstream MulmoCast's Windows/macOS/e2e variants on every intermediate commit.
+  # One Linux core test + dedicated project smoke tests provide useful CI signal
+  # without 39 concurrent jobs per change and their repeated failure emails.
+  fork_core_ci:
+    if: github.repository_owner != 'receptron' && !(github.event_name == 'workflow_dispatch' && inputs.full_matrix)
+    name: Fork core CI (Linux, Node 24)
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+    - uses: actions/checkout@v5
+    - name: Use Node.js 24
+      uses: actions/setup-node@v5
+      with:
+        node-version: '24'
+        cache: 'yarn'
+    - name: Install browser and FFmpeg dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y ffmpeg ca-certificates fonts-liberation libatk-bridge2.0-0 libatk1.0-0 libcups2 libdrm2 libgbm1 libnspr4 libnss3 libxcomposite1 libxdamage1 libxrandr2 xdg-utils
+    - name: Install project dependencies
+      env:
+        PUPPETEER_SKIP_DOWNLOAD: true
+      run: yarn install --frozen-lockfile
+    - name: Install Chromium for browser-based tests
+      run: npx puppeteer browsers install chrome
+    - name: Lint source code
+      run: yarn run lint
+    - name: Build TypeScript
+      run: yarn run build
+    - name: Run original MulmoCast unit tests on Linux
+      run: yarn run ci_test
