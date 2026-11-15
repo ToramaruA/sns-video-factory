@@ -16,7 +16,7 @@ import { selectFreeVideoProvider, type FreeVideoProvider } from "../sns-video/pr
 export const WAN22_FREE_PROVIDER_ID = "wan22_zerogpu_experimental";
 export const WAN22_FREE_MODEL = "wan2.2-i2v";
 
-export const getWan22FreeProvider = (environment: NodeJS.ProcessEnv = process.env): FreeVideoProvider => ({
+export const getWan22FreeProvider = (environment: Record<string, string | undefined> = process.env): FreeVideoProvider => ({
   id: WAN22_FREE_PROVIDER_ID,
   model: WAN22_FREE_MODEL,
   billing: "free",
