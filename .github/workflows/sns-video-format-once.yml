@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   format-new-agent:
+    # Second pass after fixing two non-format lint issues.
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
