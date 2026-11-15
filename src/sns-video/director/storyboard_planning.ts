@@ -177,10 +177,7 @@ export const applyStoryboardAssistantReply = (
 };
 
 /** Approval only applies to the current revision and is blocked during a chat turn. */
-export const approveCurrentStoryboard = (
-  state: StoryboardPlanningState,
-  decision: { revision: number; reviewerId: string },
-): StoryboardPlanningState => {
+export const approveCurrentStoryboard = (state: StoryboardPlanningState, decision: { revision: number; reviewerId: string }): StoryboardPlanningState => {
   requireId(decision.reviewerId, "Reviewer ID");
   if (state.pending || state.approved) throw new Error("Cannot approve a pending or already approved storyboard");
   if (decision.revision !== state.current.revision) throw new Error("Cannot approve an old storyboard revision");
