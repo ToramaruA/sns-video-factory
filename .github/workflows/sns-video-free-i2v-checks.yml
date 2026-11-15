@@ -13,6 +13,11 @@ on:
       - .github/workflows/sns-video-free-i2v-checks.yml
   workflow_dispatch:
 
+# Keep only the latest PR check; old intermediate commits should not send alerts.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
 
