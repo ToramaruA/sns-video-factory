@@ -1,0 +1,42 @@
+# Phase 3 / 4: カットごとの画像・動画承認と差し戻し
+
+状態：モデル接続に依存しない**純粋な状態遷移の最初の実装**。Web UI・DB・実生成ワーカーへの接続は未実装。
+
+## この段階で扱うこと
+
+- 各MulmoScript beatに不変の `beatId` を割り当てる。配列の順序で参照しない。
+- 画像と動画の生成物は、`assetId` と `revision` の組で識別し、レビュー後にだけ承認する。
+- 動画生成物には、参照元の**承認済み画像asset ID＋画像revision**と**動きの指示のrevision**を記録する。
+- 過去の生成結果が遅れて届いても、現在のrevisionと一致しなければ受け取らない。
+- **画像を差し戻すと**そのカットの画像・動画を無効化。ほかのカットの承認済み素材は保持。
+- **動きだけを差し戻すと**そのカットの動画だけを無効化。画像は保持。
+- 全カットの動画が、現在の画像・動きのrevisionに紐づいて承認されるまで最終編集を許可しない。
+
+実装：`src/sns-video/workflow/shot_review.ts`。
+オフラインテスト：`test/sns_video/test_shot_review.ts`。
+
+## 実行処理との境界
+
+このモジュールは**AI呼び出し・ファイルの作成・データ保存を一切しない**。状態だけを入力として新しい状態を返す。実際の画像生成/動画生成は後でMulmoCastや共通の無料AIルーターへ接続する。
+
+例：
+
+1. `createShotReviewStates(["shot_01", "shot_02"])` で2カットの管理状態を作る。
+2. 画像生成ジョブの結果を `receiveImageResult` へ渡す。現在のrevisionのみ受付。
+3. 人間が確認して `approveImageResult` を実行。
+4. **承認済み画像**を元に動画を作り、`receiveVideoResult` へ記録。画像と動きのrevisionを照合。
+5. 人間が `approveVideoResult` を実行。
+6. `areShotsApprovedForFinalEdit` がtrueのときだけ、承認済みクリップを結合工程に渡す。
+
+差し戻しには `requestImageRevision` または `requestMotionRevision` を用いる。いずれも**古いrevisionを指定した操作を拒否する**。後のDB/API実装では「古い更新で上書きできない」ようトランザクションの条件付き更新が別途必要。
+
+## 現段階で保証しないこと
+
+- 実際のMulmoScriptの生成・検証、LLMによる複数企画案、画像AIの選定
+- DB永続化、共有利用時の排他制御、変更履歴の監査、認証
+- 実ファイル内容ハッシュ、保存先のアクセス制御、著作権確認
+- 画像生成・動画生成ジョブとの接続、最終MP4の合成
+
+本番では監査ログ、認証ユーザー、保存先のファイル内容、ジョブIDとの照合も実装する。現段階の `reviewerId` は単なる識別子であり、**認証済み本人確認を意味しない**。
+
+[実装計画](./IMPLEMENTATION_PLAN.md) | [DSLと状態分離](./DSL_AND_DATA.md)
