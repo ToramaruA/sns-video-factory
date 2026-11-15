@@ -53,8 +53,12 @@ const proposal = (id: string): StoryboardProposal => ({
 const session = () => createStoryboardPlanningState(brief(), [proposal("a"), proposal("b")]);
 const selected = () => selectStoryboardProposal(session(), { proposalId: "a", revision: 1, reviewerId: "director" });
 
-test("requires alternative concepts with unique stable proposal IDs", () => {
-  assert.throws(() => createStoryboardPlanningState(brief(), [proposal("a")]));
+test("accepts one concept, supports alternatives, and rejects duplicate proposal IDs", () => {
+  assert.throws(() => createStoryboardPlanningState(brief(), []));
+  const single = createStoryboardPlanningState(brief(), [proposal("a")]);
+  assert.equal(single.proposals.length, 1);
+  const approved = selectStoryboardProposal(single, { proposalId: "a", revision: 1, reviewerId: "director" });
+  assert.equal(buildApprovedStoryboardDraft(approved).script.beats.length, 2);
   assert.throws(() => createStoryboardPlanningState(brief(), [proposal("a"), proposal("a")]));
   assert.throws(() => createStoryboardPlanningState(brief(), [proposal("bad/path"), proposal("b")]));
   assert.equal(session().proposals.length, 2);
