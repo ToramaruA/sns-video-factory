@@ -35,6 +35,7 @@ export const movieFreeRouterAgent: AgentFunction<GoogleMovieAgentParams, AgentBu
     generate: async (chosen) => {
       if (chosen.id === WAN22_FREE_PROVIDER_ID) {
         const result = await movieWan22ZeroGpuAgent({ ...args, params: { ...params, model: WAN22_FREE_MODEL } });
+        if (!result?.buffer) throw new Error("Wan2.2 did not return a video buffer; no automatic retry");
         return result.buffer;
       }
       // This path is deliberately closed until a second provider is explicitly
