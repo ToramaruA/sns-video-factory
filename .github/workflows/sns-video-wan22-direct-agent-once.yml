@@ -1,0 +1,94 @@
+name: One-time free Wan2.2 direct-agent live check
+
+# This temporary test runs ONLY when this workflow file first appears on
+# test/wan22-direct-agent-once. No schedule, no PR trigger, no recurring test.
+# The workflow itself is not merged into main.
+on:
+  push:
+    branches:
+      - test/wan22-direct-agent-once
+    paths:
+      - .github/workflows/sns-video-wan22-direct-agent-once.yml
+
+permissions:
+  contents: read
+
+jobs:
+  direct-agent-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 19
+    env:
+      SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT: '1'
+      HF_TOKEN: ''
+      HUGGING_FACE_HUB_TOKEN: ''
+      OPENAI_API_KEY: ''
+      GEMINI_API_KEY: ''
+      REPLICATE_API_TOKEN: ''
+      ANTHROPIC_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install offline code, FFmpeg, optional anonymous Gradio client
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          npm install -g yarn@1.22.22
+          yarn install --frozen-lockfile
+          yarn build
+          python -m pip install --disable-pip-version-check gradio_client==2.7.2 'Pillow>=11,<13'
+          command -v ffprobe
+      - name: Generate original still image
+        run: python experiments/03-free-i2v-agent/create_input.py
+      - name: One real inference through MulmoCast common Agent (no retries)
+        id: inference
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p experiments/03-free-i2v-agent/results
+          node lib/cli/bin.js movie experiments/03-free-i2v-agent/mulmo_script.json 2>&1 | tee experiments/03-free-i2v-agent/results/live-run.log
+      - name: Inspect final MP4 and report REAL success or failure
+        if: always()
+        shell: bash
+        env:
+          INFERENCE_OUTCOME: ${{ steps.inference.outcome }}
+        run: |
+          {
+            echo "## Real Wan2.2 through MulmoCast (single anonymous attempt)"
+            echo
+            echo "Generation step outcome: **${INFERENCE_OUTCOME}**"
+            echo
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "$INFERENCE_OUTCOME" != success ]; then
+            echo "Direct-Agent experiment FAILED. No automated retry or paid fallback." | tee experiments/03-free-i2v-agent/results/result.txt
+            echo "**FAILED** — check live-run.log artifact for the failure." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          file="output/mulmo_script_ja.mp4"
+          if [ ! -s "$file" ]; then
+            echo "FAILED: expected final MP4 not found at $file" | tee experiments/03-free-i2v-agent/results/result.txt
+            echo "**FAILED** — MulmoCast did not create the expected final MP4." >> "$GITHUB_STEP_SUMMARY"
+            find output -maxdepth 3 -type f -name '*.mp4' -print 2>/dev/null || true
+            exit 0
+          fi
+          ffprobe -v error -show_entries format=duration:stream=codec_type,width,height -of json "$file" | tee experiments/03-free-i2v-agent/results/ffprobe.json
+          echo "PASS: actual one-beat WAN22 AI generation and MulmoCast MP4" | tee experiments/03-free-i2v-agent/results/result.txt
+          echo "**PASS** — final MP4 exists, inspected with FFprobe." >> "$GITHUB_STEP_SUMMARY"
+      - name: Upload one-shot report and any actual MP4
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wan22-one-shot-direct-agent-live
+          path: |
+            experiments/03-free-i2v-agent/results/
+            experiments/03-free-i2v-agent/assets/input.png
+            output/mulmo_script_ja.mp4
+          if-no-files-found: warn
+          retention-days: 3
