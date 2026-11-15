@@ -76,20 +76,14 @@ export const requestMotionRevision = (shot: ShotReviewState, expectedMotionRevis
   };
 };
 
-export const receiveImageResult = (
-  shot: ShotReviewState,
-  result: { assetId: string; revision: number },
-): ShotReviewState => {
+export const receiveImageResult = (shot: ShotReviewState, result: { assetId: string; revision: number }): ShotReviewState => {
   requireId(result.assetId, "Image asset ID");
   requireRevision(result.revision, shot.imageRevision, "image");
   if (shot.image) throw new Error("Image result already exists for this revision; refusing replacement");
   return { ...shot, image: { assetId: result.assetId, revision: result.revision, status: "ready_for_review" } };
 };
 
-export const approveImageResult = (
-  shot: ShotReviewState,
-  decision: { assetId: string; revision: number; reviewerId: string },
-): ShotReviewState => {
+export const approveImageResult = (shot: ShotReviewState, decision: { assetId: string; revision: number; reviewerId: string }): ShotReviewState => {
   requireId(decision.reviewerId, "Reviewer ID");
   requireRevision(decision.revision, shot.imageRevision, "image");
   if (!shot.image || shot.image.assetId !== decision.assetId || shot.image.status !== "ready_for_review") {
@@ -124,10 +118,7 @@ export const receiveVideoResult = (
   return { ...shot, video: { ...result, status: "ready_for_review" } };
 };
 
-export const approveVideoResult = (
-  shot: ShotReviewState,
-  decision: { assetId: string; revision: number; reviewerId: string },
-): ShotReviewState => {
+export const approveVideoResult = (shot: ShotReviewState, decision: { assetId: string; revision: number; reviewerId: string }): ShotReviewState => {
   requireId(decision.reviewerId, "Reviewer ID");
   requireRevision(decision.revision, shot.videoRevision, "video");
   if (
@@ -155,5 +146,4 @@ export const isShotApprovedForFinalEdit = (shot: ShotReviewState): boolean =>
   shot.video.motionPromptRevision === shot.motionPromptRevision;
 
 /** Final rendering must wait until every shot holds an approved, current MP4. */
-export const areShotsApprovedForFinalEdit = (shots: readonly ShotReviewState[]): boolean =>
-  shots.length > 0 && shots.every(isShotApprovedForFinalEdit);
+export const areShotsApprovedForFinalEdit = (shots: readonly ShotReviewState[]): boolean => shots.length > 0 && shots.every(isShotApprovedForFinalEdit);
