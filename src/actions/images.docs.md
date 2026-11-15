@@ -1,5 +1,5 @@
 ---
-generated_at: 2026-07-21T03:42:17.407Z
+generated_at: 2026-11-15T04:09:37.167Z
 ---
 
 # images
@@ -65,6 +65,7 @@ flowchart TD
   n_htmlReader -- htmlText --> n_htmlImageGenerator
   n_context -- presentationStyle.canvasSize --> n_htmlImageGenerator
   n_preprocessor -- htmlImageFile --> n_htmlImageGenerator
+  n_context --> n_htmlImageGenerator
   n_imageGenerator(imageGenerator<br/>:preprocessor.imageAgentInfo.agent)
   n_preprocessor -- prompt --> n_imageGenerator
   n_preprocessor -- referenceImages --> n_imageGenerator
@@ -247,6 +248,7 @@ flowchart TD
     n_map_htmlReader -- htmlText --> n_map_htmlImageGenerator
     n_map_context -- presentationStyle.canvasSize --> n_map_htmlImageGenerator
     n_map_preprocessor -- htmlImageFile --> n_map_htmlImageGenerator
+    n_map_context --> n_map_htmlImageGenerator
     n_map_imageGenerator(imageGenerator<br/>:preprocessor.imageAgentInfo.agent)
     n_map_preprocessor -- prompt --> n_map_imageGenerator
     n_map_preprocessor -- referenceImages --> n_map_imageGenerator

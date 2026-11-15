@@ -1,5 +1,5 @@
 ---
-generated_at: 2026-04-19T19:03:02.745Z
+generated_at: 2026-11-15T04:09:37.028Z
 ---
 
 # audio
@@ -66,7 +66,7 @@ flowchart TD
   n_combineFiles --> n_addBGM
   n_audioCombinedFilePath --> n_addBGM
   n_audioArtifactFilePath --> n_addBGM
-  n_context --> n_addBGM
+  n_combineFiles --> n_addBGM
   n_musicFile --> n_addBGM
   class n_context,n_audioArtifactFilePath,n_audioCombinedFilePath,n_outputStudioFilePath,n_musicFile,n_map_beat,n_map_studioBeat,n_map_multiLingual,n_map_context,n_map___mapIndex,n_map_lang staticNode
   class n_map_preprocessor,n_map_tts,n_combineFiles,n_fileWrite,n_addBGM computedNode
