@@ -22,6 +22,7 @@ export const getWan22FreeProvider = (environment: Record<string, string | undefi
   billing: "free",
   routeStatus: environment.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT === "1" ? "ready" : "blocked",
   experimental: true,
+  quotaPoolId: "huggingface-zerogpu-anonymous",
   capabilities: {
     imageToVideo: true,
     lastFrame: false,

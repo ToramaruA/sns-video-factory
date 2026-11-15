@@ -35,6 +35,8 @@ export type FreeVideoProvider = {
   /** Operator approval, NOT a claim of live remaining quota. */
   routeStatus: "ready" | "blocked" | "unknown";
   experimental: boolean;
+  /** Shared GPU credit pool: separate Spaces are not independent quota sources. */
+  quotaPoolId?: string;
   capabilities: FreeVideoCapabilities;
 };
 

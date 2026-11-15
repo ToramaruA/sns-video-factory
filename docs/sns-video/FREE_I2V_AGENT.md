@@ -1,6 +1,6 @@
 # 無料画像→動画生成の共通Agent（開発版）
 
-**2026-11-15 時点:** 実装ブランチ `feat/free-i2v-provider-architecture`。通常時は**無効**。本番の共有サービスに採用したわけではない。
+**2026-11-15 時点:** [PR #4](https://github.com/ToramaruA/sns-video-factory/pull/4)はmainにマージ済み。Wan2.2からMulmoCastへの直接動画生成も[実験で成功](https://github.com/ToramaruA/sns-video-factory/actions/runs/43675580505)。通常時は**無効**で、本番の共有サービスとして承認したわけではない。
 
 ## 何が変わった？
 
@@ -100,9 +100,12 @@ SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT=1 node lib/cli/bin.js movie experiments/03-
 
 ## 次の段階
 
-1. このPRの型チェック、単体テスト、既存MulmoCast CIを通す。
-2. 実際の1beatで手動起動し、Gradioクライアントから返ったMP4をMulmoCastが保存・出力できるか確認。
-3. 共有サービスとして許可された無料経路を調べ、追加候補を比較してから2番目のAdapterを実装。
-4. 後続PRで**永続的なジョブ状態・クォータ待機・人間の承認**と連携させる。
+1. ✅ PR #4のビルド・単体テスト・Lint・主要CIに成功してmainへマージ。
+2. ✅ 1beatでWan2.2 Gradio→MulmoCast MP4の実生成が成功（GitHub Actions 43675580505）。
+3. **開発中：Phase 2の状態機械と、ローカルでクラッシュ後も二重送信しない台帳**（PR #5）。共通Agentにはまだ配線していない。
+4. **継続調査：** LTX-2.3はモデルのライセンス上、競合サービス用途に制限がある。別のSpaceを増やしても同じZeroGPU無料枠を使う場合、枠不足の代替にならない。利用可能な2番目の経路は未確定。
+5. **未着手：** 本番DB/キュー、実サービスの無料枠照会、人間の承認との連携。
+
+[Phase 2の調査結果](./PHASE2_PROVIDER_RESEARCH_2026-11-15.md)
 
 [設計入口](./README.md)
