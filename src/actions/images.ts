@@ -17,6 +17,8 @@ import {
   imageReplicateAgent,
   movieGenAIAgent,
   movieReplicateAgent,
+  movieWan22ZeroGpuAgent,
+  movieFreeRouterAgent,
   mediaMockAgent,
   soundEffectReplicateAgent,
   lipSyncReplicateAgent,
@@ -45,6 +47,8 @@ const imageAgents = {
 const movieAgents = {
   movieGenAIAgent,
   movieReplicateAgent,
+  movieWan22ZeroGpuAgent,
+  movieFreeRouterAgent,
   mediaMockAgent,
 };
 const soundEffectAgents = {

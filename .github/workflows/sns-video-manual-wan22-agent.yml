@@ -1,0 +1,56 @@
+name: SNS Video Factory - manual Wan2.2 direct agent smoke
+
+# Manual only. Calls a SHARED free Gradio Space at most once per run.
+# No billing tokens, retry loops or automatic scheduling.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  one-beat-direct-i2v:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT: '1'
+      HF_TOKEN: ''
+      HUGGING_FACE_HUB_TOKEN: ''
+      OPENAI_API_KEY: ''
+      GEMINI_API_KEY: ''
+      REPLICATE_API_TOKEN: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install FFmpeg, Python bridge, and MulmoCast
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          python -m pip install --disable-pip-version-check gradio_client==2.7.2 Pillow
+          npm install -g yarn@1.22.22
+          yarn install --frozen-lockfile
+          yarn build
+          command -v ffprobe
+      - name: Create original test image
+        run: python experiments/03-free-i2v-agent/create_input.py
+      - name: Generate 1 beat via MulmoCast free router and render final MP4
+        run: node lib/cli/bin.js movie experiments/03-free-i2v-agent/mulmo_script.json
+      - name: Verify saved MulmoCast MP4
+        run: |
+          ffprobe -v error -show_entries format=duration:stream=codec_type,width,height -of json output/mulmo_script_ja.mp4
+          test -s output/mulmo_script_ja.mp4
+      - name: Save result and debug information
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sns-video-direct-free-i2v-agent
+          path: |
+            experiments/03-free-i2v-agent/assets/input.png
+            output/mulmo_script_ja.mp4
+          if-no-files-found: warn
+          retention-days: 3

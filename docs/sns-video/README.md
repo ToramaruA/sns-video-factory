@@ -37,6 +37,7 @@
 | [DSL_AND_DATA.md](./DSL_AND_DATA.md) | MulmoScriptの使い方・独自の制作管理データ・カットの再生成 |
 | [COST_SECURITY_AND_OPERATIONS.md](./COST_SECURITY_AND_OPERATIONS.md) | 無料運用、モデル選定、安全性、著作権、アクセス制御、運用 |
 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) | 段階ごとの実装・検証基準、作業優先順位、未決事項 |
+| [FREE_I2V_AGENT.md](./FREE_I2V_AGENT.md) | 複数AIに拡張できる無料画像→動画の共通Agent・接続先・安全条件 |
 
 ## 状況（2026-11-15時点）
 
@@ -46,7 +47,7 @@
 | フォーク | **完了**（このリポジトリ） |
 | ローカルMP4を2本結合するMulmoCastのテスト | **PR [#1](https://github.com/ToramaruA/sns-video-factory/pull/1) をマージ済み**。専用GitHub Actionsおよび元のNode.js CIが成功 |
 | 継続無料の画像→動画モデルの外部接続 | **未検証** |
-| AIディレクター、生成先自動切替、承認ワークフロー | **未実装** |
+| 無料動画生成の共通Agent | **PR #4で実装中**。Wan2.2実験経路のみ・既定無効。Web UIや承認ワークフローは未実装 |
 | Web UI、共有ログイン、データベース、永続ストレージ | **未実装** |
 | GitHub Actionsが本番映像処理に最適か | **未決定** |
 

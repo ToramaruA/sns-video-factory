@@ -780,6 +780,8 @@
           "enum": [
             "replicate",
             "google",
+            "free_i2v",
+            "wan22_zerogpu_experimental",
             "mock"
           ]
         },
@@ -13960,6 +13962,8 @@
                 "enum": [
                   "replicate",
                   "google",
+                  "free_i2v",
+                  "wan22_zerogpu_experimental",
                   "mock"
                 ]
               },

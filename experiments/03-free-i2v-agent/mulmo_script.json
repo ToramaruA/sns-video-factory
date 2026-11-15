@@ -1,0 +1,24 @@
+{
+  "$mulmocast": { "version": "1.1" },
+  "title": "Free-only I2V agent one-beat test",
+  "lang": "ja",
+  "canvasSize": { "width": 720, "height": 1280 },
+  "movieParams": { "provider": "free_i2v", "model": "auto-free", "concurrency": 1 },
+  "audioParams": {
+    "suppressSpeech": true,
+    "introPadding": 0,
+    "padding": 0,
+    "closingPadding": 0,
+    "outroPadding": 0,
+    "bgmVolume": 0
+  },
+  "beats": [
+    {
+      "id": "wan22_direct_beat",
+      "text": "",
+      "duration": 2,
+      "image": { "type": "image", "source": { "kind": "path", "path": "./assets/input.png" } },
+      "moviePrompt": "The red and white rocket gently rises into the evening sky. Water vapor moves down. Slow tracking camera."
+    }
+  ]
+}

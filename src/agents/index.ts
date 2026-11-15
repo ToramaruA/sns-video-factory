@@ -6,6 +6,8 @@ import imageReplicateAgent from "./image_replicate_agent.js";
 import tavilySearchAgent from "./tavily_agent.js";
 import movieGenAIAgent from "./movie_genai_agent.js";
 import movieReplicateAgent from "./movie_replicate_agent.js";
+import movieWan22ZeroGpuAgent from "./movie_wan22_zerogpu_agent.js";
+import movieFreeRouterAgent from "./movie_free_router_agent.js";
 import mediaMockAgent from "./media_mock_agent.js";
 import ttsElevenlabsAgent from "./tts_elevenlabs_agent.js";
 import ttsOpenaiAgent from "./tts_openai_agent.js";
@@ -37,6 +39,8 @@ export {
   tavilySearchAgent,
   movieGenAIAgent,
   movieReplicateAgent,
+  movieWan22ZeroGpuAgent,
+  movieFreeRouterAgent,
   mediaMockAgent,
   ttsElevenlabsAgent,
   ttsOpenaiAgent,
