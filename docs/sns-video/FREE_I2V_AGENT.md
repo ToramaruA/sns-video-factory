@@ -54,6 +54,7 @@ MulmoScript v1.1の`movieParams.provider`に`free_i2v`を指定する。ほか�
 - Python 3 と **任意の**`gradio_client==2.7.2`（Python依存は通常のMulmoCastビルドには不要）
 - Hugging FaceのAPIトークンを設定しない
 - **ユーザーが利用条件・無料枠を確認してから手動で**`SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT=1`を設定
+- PR #6から`SNS_VIDEO_FREE_VIDEO_LEDGER_PATH`に**絶対パスで永続的なローカル台帳**を指定しないと実験を拒否する。既存の直接Wanプロバイダー名でも共通ルーターを通る。
 - 推論用リクエストは**プロセス当たり最大1回**。無料GPUの枠に入るかは保証されない
 - 2秒生成・初期画像1枚のみ対応。最終MP4はMulmoCastで任意の画面サイズに編集可能
 
@@ -61,7 +62,7 @@ MulmoScript v1.1の`movieParams.provider`に`free_i2v`を指定する。ほか�
 # ローカルでテストする場合のみ:
 python3 -m pip install gradio_client==2.7.2
 yarn build
-SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT=1 node lib/cli/bin.js movie experiments/03-free-i2v-agent/mulmo_script.json
+SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT=1 SNS_VIDEO_FREE_VIDEO_LEDGER_PATH=/absolute/path/i2v-ledger.json node lib/cli/bin.js movie experiments/03-free-i2v-agent/mulmo_script.json
 ```
 
 **本番ではこのフラグを自動的にONにしない。** UIから直接環境変数を切り替えさせる設計にもしていない。
@@ -71,6 +72,7 @@ SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT=1 node lib/cli/bin.js movie experiments/03-
 | パス | 役割 |
 |---|---|
 | `src/sns-video/providers/free_movie_router.ts` | 無料接続先だけを選ぶ副作用なしの共通ロジック |
+| `src/sns-video/providers/local_free_video_executor.ts` | PR #6: ローカル台帳で予約→生成→保存・再利用を行う単一ホスト用実行処理 |
 | `src/agents/movie_free_router_agent.ts` | MulmoCast内の共通エントリーポイント |
 | `src/agents/movie_wan22_zerogpu_agent.ts` | Wan 2.2接続、無料条件検査、サブプロセス起動、MP4返却 |
 | `src/sns-video/providers/wan22_zerogpu_client.py` | 任意依存のGradio Pythonクライアント。匿名で1回だけ生成 |
@@ -102,7 +104,7 @@ SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT=1 node lib/cli/bin.js movie experiments/03-
 
 1. ✅ PR #4のビルド・単体テスト・Lint・主要CIに成功してmainへマージ。
 2. ✅ 1beatでWan2.2 Gradio→MulmoCast MP4の実生成が成功（GitHub Actions 43675580505）。
-3. **追加済み：Phase 2の状態機械と、ローカルでクラッシュ後も二重送信しない台帳**（PR #5）。共通Agentにはまだ配線していない。
+3. **追加済み：Phase 2の状態機械とローカル台帳**（PR #5）。**PR #6で共通Agentへの配線とMP4キャッシュを追加中**。本番DBやキューではない。
 4. **継続調査：** LTX-2.3はモデルのライセンス上、競合サービス用途に制限がある。別のSpaceを増やしても同じZeroGPU無料枠を使う場合、枠不足の代替にならない。利用可能な2番目の経路は未確定。
 5. **未着手：** 本番DB/キュー、実サービスの無料枠照会、人間の承認との連携。
 

@@ -478,7 +478,8 @@ export const provider2MovieAgent = {
   // Explicit experiment; no paid fallback. This registers a connector only,
   // not a claim that a shared public Gradio Space is production capacity.
   wan22_zerogpu_experimental: {
-    agentName: "movieWan22ZeroGpuAgent",
+    // Route even explicit Wan selection through the shared durable ledger.
+    agentName: "movieFreeRouterAgent",
     defaultModel: "wan2.2-i2v",
     models: ["wan2.2-i2v"],
     keyName: "",

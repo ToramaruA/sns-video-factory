@@ -14,6 +14,9 @@ jobs:
     timeout-minutes: 20
     env:
       SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT: '1'
+      # Manual experiment only; this path disappears after the Actions run.
+      # It is NOT a persistent shared-service ledger.
+      SNS_VIDEO_FREE_VIDEO_LEDGER_PATH: /tmp/sns-video-manual-i2v-ledger.json
       HF_TOKEN: ''
       HUGGING_FACE_HUB_TOKEN: ''
       OPENAI_API_KEY: ''
