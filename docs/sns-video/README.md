@@ -39,6 +39,7 @@
 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) | 段階ごとの実装・検証基準、作業優先順位、未決事項 |
 | [FREE_I2V_AGENT.md](./FREE_I2V_AGENT.md) | 複数AIに拡張できる無料画像→動画の共通Agent・接続先・安全条件 |
 | [LOCAL_FREE_VIDEO_EXECUTION.md](./LOCAL_FREE_VIDEO_EXECUTION.md) | Phase 2の生成ジョブ排他予約・MP4キャッシュ接続と安全条件 |
+| [SHOT_REVIEW_WORKFLOW.md](./SHOT_REVIEW_WORKFLOW.md) | Phase 3/4のカット単位承認・差し戻しと古い生成結果の拒否 |
 
 ## 状況（2026-11-15時点）
 
@@ -50,7 +51,8 @@
 | 継続無料の画像→動画モデルの外部接続 | **技術実証済み**：[直接Agentからの生成テスト](https://github.com/ToramaruA/sns-video-factory/actions/runs/43675580505)は成功。ただし本番利用条件は保留 |
 | 無料動画生成の共通Agent | **[PR #4](https://github.com/ToramaruA/sns-video-factory/pull/4)をmainにマージ済み**。Wan2.2実験経路のみ・既定無効 |
 | Phase 2の無料枠・二重送信防止 | **[PR #5](https://github.com/ToramaruA/sns-video-factory/pull/5)をmainへマージ済み**。ジョブ状態とローカル台帳は実装済み |
-| Phase 2の台帳→動画生成接続とキャッシュ | **PR #6で実装中**。開発用の単一ホスト経路。共有Web・本番DB/キューとは未接続 |
+| Phase 2の台帳→動画生成接続とキャッシュ | **[PR #6](https://github.com/ToramaruA/sns-video-factory/pull/6)をmainにマージ済み**。開発用の単一ホスト経路。共有Web・本番DB/キューとは未接続 |
+| Phase 3/4のカット単位の承認・差し戻し | **状態遷移の基盤を本PRで追加**。生成AI、UI、永続化、ジョブとの接続は未実装 |
 | Web UI、共有ログイン、データベース、永続ストレージ | **未実装** |
 | GitHub Actionsが本番映像処理に最適か | **未決定** |
 
