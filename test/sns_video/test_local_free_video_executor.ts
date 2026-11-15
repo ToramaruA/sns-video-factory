@@ -55,7 +55,15 @@ test("no absolute persistent ledger means no provider can be invoked", async () 
   let count = 0;
   try {
     await assert.rejects(
-      () => runLocalFreeVideoExecution({ ...f, ledgerPath: "", generate: async () => { count++; return mp4(); } }),
+      () =>
+        runLocalFreeVideoExecution({
+          ...f,
+          ledgerPath: "",
+          generate: async () => {
+            count++;
+            return mp4();
+          },
+        }),
       /SNS_VIDEO_FREE_VIDEO_LEDGER_PATH/,
     );
     assert.equal(count, 0);
@@ -67,7 +75,13 @@ test("no absolute persistent ledger means no provider can be invoked", async () 
 test("first execution generates one MP4, subsequent identical request uses the durable cache", async () => {
   const f = await fixture();
   let count = 0;
-  const job = { ...f, generate: async () => { count++; return mp4(); } };
+  const job = {
+    ...f,
+    generate: async () => {
+      count++;
+      return mp4();
+    },
+  };
   try {
     const first = await runLocalFreeVideoExecution(job);
     const cached = await runLocalFreeVideoExecution(job);
@@ -87,7 +101,10 @@ test("first execution generates one MP4, subsequent identical request uses the d
 test("image or motion prompt changes produce distinct new jobs", async () => {
   const f = await fixture();
   let count = 0;
-  const generate = async () => { count++; return mp4(); };
+  const generate = async () => {
+    count++;
+    return mp4();
+  };
   try {
     await runLocalFreeVideoExecution({ ...f, generate });
     await runLocalFreeVideoExecution({ ...f, prompt: "The rocket moves sideways", generate });
@@ -103,7 +120,10 @@ test("image or motion prompt changes produce distinct new jobs", async () => {
 test("uncertain provider failure requires review and cannot resubmit the same job", async () => {
   const f = await fixture();
   let count = 0;
-  const generate = async (): Promise<Buffer> => { count++; throw new Error("Network lost after submission"); };
+  const generate = async (): Promise<Buffer> => {
+    count++;
+    throw new Error("Network lost after submission");
+  };
   try {
     await assert.rejects(() => runLocalFreeVideoExecution({ ...f, generate }), /Network lost/);
     const record = Object.values((await readLocalFreeVideoLedger(f.ledgerPath)).jobs)[0];
@@ -118,7 +138,13 @@ test("uncertain provider failure requires review and cannot resubmit the same jo
 test("corrupt or missing cached MP4 does not trigger a second generation", async () => {
   const f = await fixture();
   let count = 0;
-  const job = { ...f, generate: async () => { count++; return mp4(); } };
+  const job = {
+    ...f,
+    generate: async () => {
+      count++;
+      return mp4();
+    },
+  };
   try {
     await runLocalFreeVideoExecution(job);
     const record = Object.values((await readLocalFreeVideoLedger(f.ledgerPath)).jobs)[0];
@@ -135,9 +161,21 @@ test("simultaneous requests for the same ID never submit twice", async () => {
   let count = 0;
   let started!: () => void;
   let release!: () => void;
-  const entered = new Promise<void>((resolve) => { started = resolve; });
-  const gate = new Promise<void>((resolve) => { release = resolve; });
-  const job = { ...f, generate: async () => { count++; started(); await gate; return mp4(); } };
+  const entered = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const job = {
+    ...f,
+    generate: async () => {
+      count++;
+      started();
+      await gate;
+      return mp4();
+    },
+  };
   try {
     const first = runLocalFreeVideoExecution(job);
     await entered;
@@ -156,9 +194,18 @@ test("different job cannot run while another local inference has a reservation",
   let count = 0;
   let started!: () => void;
   let release!: () => void;
-  const entered = new Promise<void>((resolve) => { started = resolve; });
-  const gate = new Promise<void>((resolve) => { release = resolve; });
-  const generate = async () => { count++; started(); await gate; return mp4(); };
+  const entered = new Promise<void>((resolve) => {
+    started = resolve;
+  });
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  const generate = async () => {
+    count++;
+    started();
+    await gate;
+    return mp4();
+  };
   try {
     const first = runLocalFreeVideoExecution({ ...f, generate });
     await entered;
@@ -176,11 +223,16 @@ test("paid or unknown billing provider cannot be executed, even with a valid led
   const f = await fixture();
   let count = 0;
   try {
-    await assert.rejects(() => runLocalFreeVideoExecution({
-      ...f,
-      providers: [{ ...provider(), billing: "paid" }],
-      generate: async () => { count++; return mp4(); },
-    }));
+    await assert.rejects(() =>
+      runLocalFreeVideoExecution({
+        ...f,
+        providers: [{ ...provider(), billing: "paid" }],
+        generate: async () => {
+          count++;
+          return mp4();
+        },
+      }),
+    );
     assert.equal(count, 0);
   } finally {
     await rm(f.directory, { recursive: true, force: true });
