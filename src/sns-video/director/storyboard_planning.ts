@@ -3,8 +3,9 @@ import { createShotReviewStates } from "../workflow/shot_review.js";
 import type { ShotReviewState } from "../workflow/shot_review.js";
 
 /**
- * Model-independent Phase 3 planning state. This code never contacts a model,
- * converts reference asset IDs into URLs, or authorizes paid generation.
+ * Phase 3: one storyboard refined in a normal LLM-style conversation.
+ * This is only the model-independent state contract. It never invokes an LLM,
+ * changes files, accesses private references, or starts paid/free generation.
  */
 export type StoryboardReference = {
   assetId: string;
@@ -18,6 +19,7 @@ export type VideoBrief = {
   audience: string;
   platform: "instagram_reels" | "tiktok" | "youtube_shorts" | "other";
   language: "ja" | "en";
+  /** Guidance only: conversational edits may change the total shot length. */
   targetDurationSeconds: number;
   references: StoryboardReference[];
 };
@@ -31,8 +33,7 @@ export type StoryboardShot = {
   referenceAssetIds: string[];
 };
 
-export type StoryboardProposal = {
-  proposalId: string;
+export type Storyboard = {
   revision: number;
   title: string;
   concept: string;
@@ -40,21 +41,27 @@ export type StoryboardProposal = {
   shots: StoryboardShot[];
 };
 
-export type StoryboardSelection = {
-  proposalId: string;
-  revision: number;
-  reviewerId: string;
+export type StoryboardChatTurn = {
+  turnId: string;
+  userMessage: string;
+  assistantMessage: string;
+  basedOnRevision: number;
+  resultingRevision: number;
 };
 
 export type StoryboardPlanningState = {
   brief: VideoBrief;
-  proposals: StoryboardProposal[];
-  selected?: StoryboardSelection;
+  current: Storyboard;
+  /** Original and previous revisions remain available for chat context. */
+  history: Storyboard[];
+  turns: StoryboardChatTurn[];
+  pending?: { turnId: string; userMessage: string; basedOnRevision: number };
+  approved?: { revision: number; reviewerId: string };
 };
 
 const requireId = (value: string, label: string): void => {
-  if (!/^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/.test(value)) {
-    throw new Error(`${label} must be a stable ASCII ID with no spaces or path characters`);
+  if (typeof value !== "string" || !/^[A-Za-z0-9][A-Za-z0-9_-]{0,79}$/.test(value)) {
+    throw new Error(`${label} must be a stable ASCII identifier without spaces or path characters`);
   }
 };
 
@@ -66,7 +73,7 @@ const requirePositiveDuration = (value: number, label: string): void => {
   if (!Number.isFinite(value) || value <= 0) throw new Error(`${label} must be a positive finite number`);
 };
 
-const copyAndValidateBrief = (brief: VideoBrief): VideoBrief => {
+const copyBrief = (brief: VideoBrief): VideoBrief => {
   requireId(brief.projectId, "Project ID");
   requireText(brief.purpose, "Purpose");
   requireText(brief.audience, "Audience");
@@ -86,16 +93,15 @@ const copyAndValidateBrief = (brief: VideoBrief): VideoBrief => {
   return { ...brief, references };
 };
 
-const copyAndValidateProposal = (proposal: StoryboardProposal, brief: VideoBrief): StoryboardProposal => {
-  requireId(proposal.proposalId, "Proposal ID");
-  if (!Number.isInteger(proposal.revision) || proposal.revision < 1) throw new Error("Proposal revision must be a positive integer");
-  requireText(proposal.title, "Proposal title");
-  requireText(proposal.concept, "Proposal concept");
-  requireText(proposal.visualStyle, "Visual style");
-  if (!proposal.shots.length) throw new Error("Storyboard must contain at least one shot");
-  const referenceIds = new Set(brief.references.map((ref) => ref.assetId));
+const copyStoryboard = (storyboard: Storyboard, brief: VideoBrief): Storyboard => {
+  if (!Number.isInteger(storyboard.revision) || storyboard.revision < 1) throw new Error("Storyboard revision must be a positive integer");
+  requireText(storyboard.title, "Storyboard title");
+  requireText(storyboard.concept, "Storyboard concept");
+  requireText(storyboard.visualStyle, "Visual style");
+  if (!Array.isArray(storyboard.shots) || !storyboard.shots.length) throw new Error("Storyboard needs at least one shot");
+  const knownAssets = new Set(brief.references.map((ref) => ref.assetId));
   const beatIds = new Set<string>();
-  const shots = proposal.shots.map((shot) => {
+  const shots = storyboard.shots.map((shot) => {
     requireId(shot.beatId, "Beat ID");
     if (beatIds.has(shot.beatId)) throw new Error(`Duplicate beat ID: ${shot.beatId}`);
     beatIds.add(shot.beatId);
@@ -103,75 +109,97 @@ const copyAndValidateProposal = (proposal: StoryboardProposal, brief: VideoBrief
     requireText(shot.visualDescription, "Visual description");
     requireText(shot.imagePrompt, "Image prompt");
     requireText(shot.moviePrompt, "Motion prompt");
-    const references = new Set<string>();
+    if (!Array.isArray(shot.referenceAssetIds)) throw new Error("Shot references must be an array");
+    const seenAssets = new Set<string>();
     for (const assetId of shot.referenceAssetIds) {
-      if (!referenceIds.has(assetId)) throw new Error(`Unknown reference asset: ${assetId}`);
-      if (references.has(assetId)) throw new Error(`Duplicate shot reference: ${assetId}`);
-      references.add(assetId);
+      if (!knownAssets.has(assetId)) throw new Error(`Unknown reference asset: ${assetId}`);
+      if (seenAssets.has(assetId)) throw new Error(`Duplicate shot reference: ${assetId}`);
+      seenAssets.add(assetId);
     }
     return { ...shot, referenceAssetIds: [...shot.referenceAssetIds] };
   });
-  const duration = shots.reduce((sum, shot) => sum + shot.durationSeconds, 0);
-  if (Math.abs(duration - brief.targetDurationSeconds) > 0.001) {
-    throw new Error(`Storyboard duration ${duration} must match target ${brief.targetDurationSeconds}`);
-  }
-  return { ...proposal, shots };
+  return { ...storyboard, shots };
 };
 
-/** One approved concept is sufficient; alternatives may be added when useful. */
-export const createStoryboardPlanningState = (brief: VideoBrief, proposals: readonly StoryboardProposal[]): StoryboardPlanningState => {
-  const snapshot = copyAndValidateBrief(brief);
-  if (proposals.length < 1) throw new Error("Planning requires at least one proposed concept");
-  const seen = new Set<string>();
-  const candidates = proposals.map((proposal) => {
-    const candidate = copyAndValidateProposal(proposal, snapshot);
-    if (seen.has(candidate.proposalId)) throw new Error(`Duplicate proposal ID: ${candidate.proposalId}`);
-    seen.add(candidate.proposalId);
-    return candidate;
-  });
-  return { brief: snapshot, proposals: candidates };
+/** Called after the existing MulmoCast/GraphAI LLM scripting capability produces an initial concept. */
+export const createStoryboardPlanningState = (brief: VideoBrief, initialStoryboard: Storyboard): StoryboardPlanningState => {
+  const safeBrief = copyBrief(brief);
+  if (initialStoryboard.revision !== 1) throw new Error("An initial storyboard must have revision 1");
+  const current = copyStoryboard(initialStoryboard, safeBrief);
+  return { brief: safeBrief, current, history: [current], turns: [] };
 };
 
-/** Review decisions are specific to a candidate revision and a caller-supplied actor. */
-export const selectStoryboardProposal = (state: StoryboardPlanningState, decision: StoryboardSelection): StoryboardPlanningState => {
-  requireId(decision.reviewerId, "Reviewer ID");
-  if (state.selected) throw new Error("A concept is already selected; revise it explicitly before re-approval");
-  const candidate = state.proposals.find((proposal) => proposal.proposalId === decision.proposalId);
-  if (!candidate || candidate.revision !== decision.revision) throw new Error("Stale or unknown proposal revision");
-  return { ...state, selected: { ...decision } };
-};
-
-/** A revised candidate invalidates only its own approval; other proposals remain unchanged. */
-export const reviseStoryboardProposal = (
+/** Records an ordinary natural-language request such as "Make the second shot shorter". */
+export const submitStoryboardFeedback = (
   state: StoryboardPlanningState,
-  proposalId: string,
-  expectedRevision: number,
-  replacement: StoryboardProposal,
+  request: { turnId: string; expectedRevision: number; message: string },
 ): StoryboardPlanningState => {
-  const old = state.proposals.find((proposal) => proposal.proposalId === proposalId);
-  if (!old || old.revision !== expectedRevision) throw new Error("Stale or unknown proposal revision");
-  if (replacement.proposalId !== proposalId || replacement.revision !== expectedRevision + 1) {
-    throw new Error("Revision must keep the same proposal ID and increment exactly once");
-  }
-  const candidate = copyAndValidateProposal(replacement, state.brief);
-  const proposals = state.proposals.map((proposal) => (proposal.proposalId === proposalId ? candidate : proposal));
-  const selected = state.selected?.proposalId === proposalId ? undefined : state.selected;
-  return { ...state, proposals, selected };
+  requireId(request.turnId, "Turn ID");
+  requireText(request.message, "User message");
+  if (state.pending) throw new Error("Complete the previous LLM turn before another reply");
+  if (state.current.revision !== request.expectedRevision) throw new Error("Stale storyboard revision");
+  if (state.turns.some((turn) => turn.turnId === request.turnId)) throw new Error("Duplicate turn ID");
+  return {
+    ...state,
+    approved: undefined,
+    pending: { turnId: request.turnId, basedOnRevision: request.expectedRevision, userMessage: request.message },
+  };
 };
 
-const requireSelected = (state: StoryboardPlanningState): StoryboardProposal => {
-  const selection = state.selected;
-  if (!selection) throw new Error("A human-approved concept is required");
-  const candidate = state.proposals.find((proposal) => proposal.proposalId === selection.proposalId);
-  if (!candidate || candidate.revision !== selection.revision) throw new Error("Selected proposal has become stale");
-  return candidate;
+/**
+ * The LLM may explain/ask a question without changing the storyboard; or
+ * return a complete revised storyboard. Never infer a revision from raw prose.
+ */
+export const applyStoryboardAssistantReply = (
+  state: StoryboardPlanningState,
+  reply: { turnId: string; message: string; revisedStoryboard?: Storyboard },
+): StoryboardPlanningState => {
+  requireId(reply.turnId, "Turn ID");
+  requireText(reply.message, "Assistant message");
+  if (!state.pending || state.pending.turnId !== reply.turnId || state.pending.basedOnRevision !== state.current.revision) {
+    throw new Error("Stale or unknown assistant turn");
+  }
+  let current = state.current;
+  let history = state.history;
+  if (reply.revisedStoryboard) {
+    if (reply.revisedStoryboard.revision !== state.current.revision + 1) throw new Error("A revised storyboard must increment revision by exactly one");
+    current = copyStoryboard(reply.revisedStoryboard, state.brief);
+    history = [...state.history, current];
+  }
+  const turn: StoryboardChatTurn = {
+    turnId: reply.turnId,
+    userMessage: state.pending.userMessage,
+    assistantMessage: reply.message,
+    basedOnRevision: state.pending.basedOnRevision,
+    resultingRevision: current.revision,
+  };
+  return { ...state, current, history, turns: [...state.turns, turn], pending: undefined };
 };
+
+/** Approval only applies to the current revision and is blocked during a chat turn. */
+export const approveCurrentStoryboard = (
+  state: StoryboardPlanningState,
+  decision: { revision: number; reviewerId: string },
+): StoryboardPlanningState => {
+  requireId(decision.reviewerId, "Reviewer ID");
+  if (state.pending || state.approved) throw new Error("Cannot approve a pending or already approved storyboard");
+  if (decision.revision !== state.current.revision) throw new Error("Cannot approve an old storyboard revision");
+  return { ...state, approved: { ...decision } };
+};
+
+/** A safe, provider-neutral conversation snapshot for an existing LLM adapter. */
+export const getStoryboardChatContext = (state: StoryboardPlanningState) => ({
+  brief: copyBrief(state.brief),
+  storyboard: copyStoryboard(state.current, state.brief),
+  turns: state.turns.map((turn) => ({ ...turn })),
+  pending: state.pending ? { ...state.pending } : undefined,
+});
 
 export type MulmoStoryboardDraft = {
-  /** Valid DSL syntax does not authorize executing paid/default providers. */
+  /** Valid MulmoScript does not imply free/approved execution! */
   executionAllowed: false;
-  /** Keep reference IDs outside MulmoScript until a verified provider can use them. */
   referencesByBeat: Array<{ beatId: string; assetIds: string[] }>;
+  actualDurationSeconds: number;
   script: {
     $mulmocast: { version: "1.1" };
     title: string;
@@ -182,24 +210,22 @@ export type MulmoStoryboardDraft = {
   };
 };
 
-/**
- * Produce a schema-validated DESIGN DRAFT, not an executable job. MulmoCast
- * defaults can select paid providers; the orchestrator must explicitly gate
- * every provider before handing a script to any generation command.
- */
+/** Reuse MulmoCast's own schema. Return a DESIGN DRAFT, never an executable generation job. */
 export const buildApprovedStoryboardDraft = (state: StoryboardPlanningState): MulmoStoryboardDraft => {
-  const chosen = requireSelected(state);
+  if (state.pending || !state.approved || state.approved.revision !== state.current.revision) {
+    throw new Error("A current, human-approved storyboard is required");
+  }
   const script: MulmoStoryboardDraft["script"] = {
     $mulmocast: { version: "1.1" },
-    title: chosen.title,
+    title: state.current.title,
     lang: state.brief.language,
     canvasSize: { width: 720, height: 1280 },
     audioParams: { suppressSpeech: true, introPadding: 0, padding: 0, closingPadding: 0, outroPadding: 0, bgmVolume: 0 },
-    beats: chosen.shots.map((shot) => ({
+    beats: state.current.shots.map((shot) => ({
       id: shot.beatId,
       text: "",
       duration: shot.durationSeconds,
-      imagePrompt: `${chosen.visualStyle}\n${shot.imagePrompt}`,
+      imagePrompt: `${state.current.visualStyle}\n${shot.imagePrompt}`,
       moviePrompt: shot.moviePrompt,
     })),
   };
@@ -208,10 +234,15 @@ export const buildApprovedStoryboardDraft = (state: StoryboardPlanningState): Mu
   return {
     executionAllowed: false,
     script,
-    referencesByBeat: chosen.shots.map((shot) => ({ beatId: shot.beatId, assetIds: [...shot.referenceAssetIds] })),
+    actualDurationSeconds: state.current.shots.reduce((sum, shot) => sum + shot.durationSeconds, 0),
+    referencesByBeat: state.current.shots.map((shot) => ({ beatId: shot.beatId, assetIds: [...shot.referenceAssetIds] })),
   };
 };
 
-/** Bridge to PR #7: initialize shot review only from a selected current concept. */
-export const initializeSelectedShotReviews = (state: StoryboardPlanningState): ShotReviewState[] =>
-  createShotReviewStates(requireSelected(state).shots.map((shot) => shot.beatId));
+/** Reuse PR #7's approval state for the current confirmed beat IDs. */
+export const initializeApprovedShotReviews = (state: StoryboardPlanningState): ShotReviewState[] => {
+  if (state.pending || !state.approved || state.approved.revision !== state.current.revision) {
+    throw new Error("A current, human-approved storyboard is required");
+  }
+  return createShotReviewStates(state.current.shots.map((shot) => shot.beatId));
+};
