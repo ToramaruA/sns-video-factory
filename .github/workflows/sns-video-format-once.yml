@@ -1,0 +1,42 @@
+name: SNS Video Factory - one-time source formatter
+
+# Temporary workflow on the feature branch only; removed after formatting.
+on:
+  push:
+    branches:
+      - feat/free-i2v-provider-architecture
+    paths:
+      - .github/workflows/sns-video-format-once.yml
+
+permissions:
+  contents: write
+
+jobs:
+  format-new-agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/free-i2v-provider-architecture
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install project dependencies
+        run: |
+          npm install -g yarn@1.22.22
+          yarn install --frozen-lockfile
+      - name: Fix code style (only newly authored files)
+        run: |
+          ./node_modules/.bin/eslint --fix src/agents/movie_free_router_agent.ts src/agents/movie_wan22_zerogpu_agent.ts src/sns-video/providers/free_movie_router.ts test/sns_video/test_free_movie_router.ts || true
+          ./node_modules/.bin/prettier --write src/agents/movie_free_router_agent.ts src/agents/movie_wan22_zerogpu_agent.ts src/sns-video/providers/free_movie_router.ts test/sns_video/test_free_movie_router.ts
+          ./node_modules/.bin/eslint src/agents/movie_free_router_agent.ts src/agents/movie_wan22_zerogpu_agent.ts src/sns-video/providers/free_movie_router.ts test/sns_video/test_free_movie_router.ts
+      - name: Commit formatted source to THIS feature branch
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/agents/movie_free_router_agent.ts src/agents/movie_wan22_zerogpu_agent.ts src/sns-video/providers/free_movie_router.ts test/sns_video/test_free_movie_router.ts
+          if ! git diff --cached --quiet; then
+            git commit -m "style(i2v): align new agent with project lint rules"
+            git push origin HEAD:feat/free-i2v-provider-architecture
+          fi
