@@ -32,17 +32,15 @@ export const movieFreeRouterAgent: AgentFunction<
     generateAudio: params.generateAudio === true,
   });
 
-  switch (chosen.id) {
-    case WAN22_FREE_PROVIDER_ID:
-      return movieWan22ZeroGpuAgent({
-        ...args,
-        params: { ...params, model: WAN22_FREE_MODEL },
-      });
-    default:
-      // A newly registered provider cannot accidentally reach an unknown
-      // implementation or one of MulmoCast's paid agents.
-      throw new Error("Selected free video provider has no registered adapter");
+  if (chosen.id === WAN22_FREE_PROVIDER_ID) {
+    return movieWan22ZeroGpuAgent({
+      ...args,
+      params: { ...params, model: WAN22_FREE_MODEL },
+    });
   }
+  // A newly registered provider cannot accidentally reach an unknown
+  // implementation or one of MulmoCast's paid agents.
+  throw new Error("Selected free video provider has no registered adapter");
 };
 
 const movieFreeRouterAgentInfo: AgentFunctionInfo = {
