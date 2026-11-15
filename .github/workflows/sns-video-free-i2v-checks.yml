@@ -1,0 +1,44 @@
+name: SNS Video Factory - free I2V provider checks
+
+on:
+  pull_request:
+    paths:
+      - src/agents/movie_free_router_agent.ts
+      - src/agents/movie_wan22_zerogpu_agent.ts
+      - src/sns-video/**
+      - src/types/provider2agent.ts
+      - src/actions/images.ts
+      - src/agents/index.ts
+      - test/sns_video/**
+      - .github/workflows/sns-video-free-i2v-checks.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-free-router-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT: '0'
+      HF_TOKEN: ''
+      HUGGING_FACE_HUB_TOKEN: ''
+      OPENAI_API_KEY: ''
+      GEMINI_API_KEY: ''
+      REPLICATE_API_TOKEN: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        run: |
+          npm install -g yarn@1.22.22
+          yarn install --frozen-lockfile
+      - name: Build MulmoCast (TypeScript check)
+        run: yarn build
+      - name: Run free-provider tests (NO GPU/API calls)
+        run: ./node_modules/.bin/tsx --test test/sns_video/test_free_movie_router.ts
+      - name: Lint new movie agent and router
+        run: ./node_modules/.bin/eslint src/agents/movie_free_router_agent.ts src/agents/movie_wan22_zerogpu_agent.ts src/sns-video/providers/free_movie_router.ts test/sns_video/test_free_movie_router.ts
