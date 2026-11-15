@@ -69,11 +69,7 @@ export const emptyFreeVideoRuntime = (): FreeVideoRuntimeState => ({
  * A known quota rejection can safely exclude its *shared* pool and wait for an
  * independent approved provider, but this function never invokes that provider.
  */
-export const planFreeVideoAttempt = (
-  job: FreeVideoJobRecord,
-  candidates: readonly FreeVideoProvider[],
-  runtime: FreeVideoRuntimeState,
-): FreeVideoDecision => {
+export const planFreeVideoAttempt = (job: FreeVideoJobRecord, candidates: readonly FreeVideoProvider[], runtime: FreeVideoRuntimeState): FreeVideoDecision => {
   if (job.status === "running" || job.status === "needs_review" || job.status === "succeeded" || job.status === "failed") {
     return { action: "stop", reason: "Job is already started, completed, failed or requires human review", job };
   }
@@ -85,8 +81,7 @@ export const planFreeVideoAttempt = (
   // invalidates *all* other Spaces consuming that same anonymous allowance.
   const allowed = candidates.filter(
     (p) =>
-      !job.attemptedProviderIds.includes(p.id) &&
-      !runtime.unavailableProviderIds.includes(p.id) &&
+      !job.attemptedProviderIds.includes(p.id) && !runtime.unavailableProviderIds.includes(p.id) &&
       !runtime.exhaustedPoolIds.includes(getFreeVideoPoolId(p)),
   );
   if (allowed.length === 0 && runtime.exhaustedPoolIds.length > 0) {

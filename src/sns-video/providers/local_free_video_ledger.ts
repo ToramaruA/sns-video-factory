@@ -2,19 +2,8 @@ import { randomUUID } from "node:crypto";
 import { mkdir, open, readFile, rename, rm, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import type { FreeVideoProvider } from "./free_movie_router.js";
-import {
-  createFreeVideoJob,
-  emptyFreeVideoRuntime,
-  planFreeVideoAttempt,
-  settleFreeVideoAttempt,
-} from "./free_video_job_coordinator.js";
-import type {
-  FreeVideoAttemptOutcome,
-  FreeVideoDecision,
-  FreeVideoJobRecord,
-  FreeVideoJobSpec,
-  FreeVideoRuntimeState,
-} from "./free_video_job_coordinator.js";
+import { createFreeVideoJob, emptyFreeVideoRuntime, planFreeVideoAttempt, settleFreeVideoAttempt } from "./free_video_job_coordinator.js";
+import type { FreeVideoAttemptOutcome, FreeVideoDecision, FreeVideoJobRecord, FreeVideoJobSpec, FreeVideoRuntimeState } from "./free_video_job_coordinator.js";
 
 export type LocalFreeVideoLedger = {
   jobs: Record<string, FreeVideoJobRecord>;
@@ -66,11 +55,7 @@ const transact = async <T>(path: string, mutation: (snapshot: LocalFreeVideoLedg
 
 export const readLocalFreeVideoLedger = (path: string): Promise<LocalFreeVideoLedger> => readSnapshot(path);
 
-export const registerLocalFreeVideoJob = async (
-  path: string,
-  id: string,
-  spec: FreeVideoJobSpec,
-): Promise<FreeVideoJobRecord> =>
+export const registerLocalFreeVideoJob = async (path: string, id: string, spec: FreeVideoJobSpec): Promise<FreeVideoJobRecord> =>
   transact(path, (snapshot) => {
     // A different source or prompt can NEVER silently reuse an existing ID.
     const existing = snapshot.jobs[id];
@@ -85,11 +70,7 @@ export const registerLocalFreeVideoJob = async (
     return job;
   });
 
-export const reserveLocalFreeVideoAttempt = async (
-  path: string,
-  id: string,
-  candidates: readonly FreeVideoProvider[],
-): Promise<FreeVideoDecision> =>
+export const reserveLocalFreeVideoAttempt = async (path: string, id: string, candidates: readonly FreeVideoProvider[]): Promise<FreeVideoDecision> =>
   transact(path, (snapshot) => {
     const job = snapshot.jobs[id];
     if (!job) throw new Error("Unknown job ID");
