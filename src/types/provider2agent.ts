@@ -449,6 +449,32 @@ export const provider2MovieAgent = {
       },
     } as Record<string, GoogleMovieModelParams>,
   },
+  // Free-only entry point: additional verified free providers can be added
+  // to the router without changing the MulmoScript schema again.
+  free_i2v: {
+    agentName: "movieFreeRouterAgent",
+    defaultModel: "auto-free",
+    models: ["auto-free", "wan2.2-i2v"],
+    keyName: "",
+    modelParams: {
+      "auto-free": {
+        durations: [2],
+        supportsDuration: true,
+        supportsLastFrame: false,
+        supportsReferenceImages: false,
+        supportsPersonGeneration: false,
+        audio: { mode: AUDIO_MODE_NEVER },
+      },
+      "wan2.2-i2v": {
+        durations: [2],
+        supportsDuration: true,
+        supportsLastFrame: false,
+        supportsReferenceImages: false,
+        supportsPersonGeneration: false,
+        audio: { mode: AUDIO_MODE_NEVER },
+      },
+    } as Record<string, GoogleMovieModelParams>,
+  },
   // Explicit experiment; no paid fallback. This registers a connector only,
   // not a claim that a shared public Gradio Space is production capacity.
   wan22_zerogpu_experimental: {
