@@ -37,6 +37,7 @@
 | [DSL_AND_DATA.md](./DSL_AND_DATA.md) | MulmoScriptの使い方・独自の制作管理データ・カットの再生成 |
 | [COST_SECURITY_AND_OPERATIONS.md](./COST_SECURITY_AND_OPERATIONS.md) | 無料運用、モデル選定、安全性、著作権、アクセス制御、運用 |
 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) | 段階ごとの実装・検証基準、作業優先順位、未決事項 |
+| [REUSE_AUDIT_2026-11-15.md](./REUSE_AUDIT_2026-11-15.md) | PR #1〜#8再点検、MulmoCast既存機能の再利用と設計簡素化、無料API方針 |
 | [FREE_I2V_AGENT.md](./FREE_I2V_AGENT.md) | 複数AIに拡張できる無料画像→動画の共通Agent・接続先・安全条件 |
 | [LOCAL_FREE_VIDEO_EXECUTION.md](./LOCAL_FREE_VIDEO_EXECUTION.md) | Phase 2の生成ジョブ排他予約・MP4キャッシュ接続と安全条件 |
 | [SHOT_REVIEW_WORKFLOW.md](./SHOT_REVIEW_WORKFLOW.md) | Phase 3/4のカット単位承認・差し戻しと古い生成結果の拒否 |
@@ -53,16 +54,16 @@
 | 無料動画生成の共通Agent | **[PR #4](https://github.com/ToramaruA/sns-video-factory/pull/4)をmainにマージ済み**。Wan2.2実験経路のみ・既定無効 |
 | Phase 2の無料枠・二重送信防止 | **[PR #5](https://github.com/ToramaruA/sns-video-factory/pull/5)をmainへマージ済み**。ジョブ状態とローカル台帳は実装済み |
 | Phase 2の台帳→動画生成接続とキャッシュ | **[PR #6](https://github.com/ToramaruA/sns-video-factory/pull/6)をmainにマージ済み**。開発用の単一ホスト経路。共有Web・本番DB/キューとは未接続 |
-| Phase 3/4のカット単位の承認・差し戻し | **状態遷移の基盤を本PRで追加**。生成AI、UI、永続化、ジョブとの接続は未実装 |
-| Phase 3の対話型企画・カット割り | **本PRで一つの企画をチャットで修正する状態管理と安全な下書き変換を追加**。既存MulmoCastの対話型LLM・スキーマを再利用し、Web用AI接続自体は未実装 |
+| Phase 3/4のカット単位の承認・差し戻し | **PR #7をmainにマージ済み**。状態遷移の基盤。生成AI、UI、永続化、ジョブとの接続は未実装 |
+| Phase 3の対話型企画・カット割り | **PR #8をmainにマージ済み**。会話履歴・承認とMulmoScript下書きの基盤。既存MulmoCastのGraphAI対話接続は未実装。独自Storyboardとの二重管理を今後簡素化する |
 | Web UI、共有ログイン、データベース、永続ストレージ | **未実装** |
 | GitHub Actionsが本番映像処理に最適か | **未決定** |
 
 ## 設計上の優先順位
 
-1. **既存MulmoCastを最大限再利用する。** 画像生成から結合までの機構を再実装しない。
+1. **既存MulmoCastとGraphAIを最大限再利用する。** 会話LLM、文章→MulmoScript、生成、キャッシュ、字幕、FFmpeg結合を再実装しない。無料API（課金を起こさない無料Tier）は使用可。
 2. 動画の設計図（MulmoScript）と、制作の途中経過（独自状態）を分ける。
-3. 画像→動画AIを少なくとも1つ、**継続無料・合法・自動利用可能**な形で実証するまでは、大きなUI開発を優先しない。
+3. **無料APIによる既存LLMの活用と、画像→動画AIの実証**を両方進める。大きなWeb UI開発に先立ち、生成・承認の段階的実行を既存MulmoCastへ接続する。
 4. 各生成AIは交換可能にし、提供元の利用条件・機能差・無料枠を明示する。
 5. 利用者の承認済み素材は保持し、修正が必要なカットだけ再生成する。
 6. 「無料」は無制限を意味しない。負荷・容量・時間・権利面の制約を可視化する。
