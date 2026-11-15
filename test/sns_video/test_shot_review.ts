@@ -29,11 +29,13 @@ const readyVideo = (): ShotReviewState =>
     motionPromptRevision: 1,
   });
 
-const completeShot = (): ShotReviewState =>
-  approveVideoResult(readyVideo(), { assetId: "mp4-a", revision: 1, reviewerId: "director" });
+const completeShot = (): ShotReviewState => approveVideoResult(readyVideo(), { assetId: "mp4-a", revision: 1, reviewerId: "director" });
 
 test("a project needs nonempty, unique, stable beat IDs", () => {
-  assert.deepEqual(createShotReviewStates(["shot_01", "shot_02"]).map((s) => s.beatId), ["shot_01", "shot_02"]);
+  assert.deepEqual(
+    createShotReviewStates(["shot_01", "shot_02"]).map((s) => s.beatId),
+    ["shot_01", "shot_02"],
+  );
   assert.throws(() => createShotReviewStates([]));
   assert.throws(() => createShotReviewStates(["same", "same"]));
   assert.throws(() => createShotReviewStates([" shot_01"]));
