@@ -48,7 +48,7 @@
 | ローカルMP4を2本結合するMulmoCastのテスト | **PR [#1](https://github.com/ToramaruA/sns-video-factory/pull/1) をマージ済み**。専用GitHub Actionsおよび元のNode.js CIが成功 |
 | 継続無料の画像→動画モデルの外部接続 | **技術実証済み**：[直接Agentからの生成テスト](https://github.com/ToramaruA/sns-video-factory/actions/runs/43675580505)は成功。ただし本番利用条件は保留 |
 | 無料動画生成の共通Agent | **[PR #4](https://github.com/ToramaruA/sns-video-factory/pull/4)をmainにマージ済み**。Wan2.2実験経路のみ・既定無効 |
-| Phase 2の無料枠・二重送信防止 | **PR #5で基礎実装中**。純粋な状態遷移・ローカルのテスト用台帳のみ。本番DB/キューとは未接続 |
+| Phase 2の無料枠・二重送信防止 | **PR #5に基礎実装を追加**。純粋な状態遷移・ローカルのテスト用台帳のみ。本番DB/キューとは未接続 |
 | Web UI、共有ログイン、データベース、永続ストレージ | **未実装** |
 | GitHub Actionsが本番映像処理に最適か | **未決定** |
 

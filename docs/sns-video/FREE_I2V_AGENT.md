@@ -102,7 +102,7 @@ SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT=1 node lib/cli/bin.js movie experiments/03-
 
 1. ✅ PR #4のビルド・単体テスト・Lint・主要CIに成功してmainへマージ。
 2. ✅ 1beatでWan2.2 Gradio→MulmoCast MP4の実生成が成功（GitHub Actions 43675580505）。
-3. **開発中：Phase 2の状態機械と、ローカルでクラッシュ後も二重送信しない台帳**（PR #5）。共通Agentにはまだ配線していない。
+3. **追加済み：Phase 2の状態機械と、ローカルでクラッシュ後も二重送信しない台帳**（PR #5）。共通Agentにはまだ配線していない。
 4. **継続調査：** LTX-2.3はモデルのライセンス上、競合サービス用途に制限がある。別のSpaceを増やしても同じZeroGPU無料枠を使う場合、枠不足の代替にならない。利用可能な2番目の経路は未確定。
 5. **未着手：** 本番DB/キュー、実サービスの無料枠照会、人間の承認との連携。
 
