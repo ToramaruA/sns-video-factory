@@ -449,6 +449,24 @@ export const provider2MovieAgent = {
       },
     } as Record<string, GoogleMovieModelParams>,
   },
+  // Explicit experiment; no paid fallback. This registers a connector only,
+  // not a claim that a shared public Gradio Space is production capacity.
+  wan22_zerogpu_experimental: {
+    agentName: "movieWan22ZeroGpuAgent",
+    defaultModel: "wan2.2-i2v",
+    models: ["wan2.2-i2v"],
+    keyName: "",
+    modelParams: {
+      "wan2.2-i2v": {
+        durations: [2],
+        supportsDuration: true,
+        supportsLastFrame: false,
+        supportsReferenceImages: false,
+        supportsPersonGeneration: false,
+        audio: { mode: AUDIO_MODE_NEVER },
+      },
+    } as Record<string, GoogleMovieModelParams>,
+  },
   mock: {
     agentName: "mediaMockAgent",
     defaultModel: "mock-model",
