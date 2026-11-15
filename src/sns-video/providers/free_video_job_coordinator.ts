@@ -81,8 +81,7 @@ export const planFreeVideoAttempt = (job: FreeVideoJobRecord, candidates: readon
   // invalidates *all* other Spaces consuming that same anonymous allowance.
   const allowed = candidates.filter(
     (p) =>
-      !job.attemptedProviderIds.includes(p.id) && !runtime.unavailableProviderIds.includes(p.id) &&
-      !runtime.exhaustedPoolIds.includes(getFreeVideoPoolId(p)),
+      !job.attemptedProviderIds.includes(p.id) && !runtime.unavailableProviderIds.includes(p.id) && !runtime.exhaustedPoolIds.includes(getFreeVideoPoolId(p)),
   );
   if (allowed.length === 0 && runtime.exhaustedPoolIds.length > 0) {
     return {
