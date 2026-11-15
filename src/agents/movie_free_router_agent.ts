@@ -1,6 +1,7 @@
 import type { AgentFunction, AgentFunctionInfo } from "graphai";
 import type { AgentBufferResult, GoogleMovieAgentParams, MovieAgentInputs } from "../types/agent.js";
 import { selectFreeVideoProvider } from "../sns-video/providers/free_movie_router.js";
+import { runLocalFreeVideoExecution } from "../sns-video/providers/local_free_video_executor.js";
 import { getWan22FreeProvider, movieWan22ZeroGpuAgent, WAN22_FREE_PROVIDER_ID, WAN22_FREE_MODEL } from "./movie_wan22_zerogpu_agent.js";
 
 /**
@@ -13,24 +14,36 @@ import { getWan22FreeProvider, movieWan22ZeroGpuAgent, WAN22_FREE_PROVIDER_ID, W
 export const movieFreeRouterAgent: AgentFunction<GoogleMovieAgentParams, AgentBufferResult, MovieAgentInputs, Record<string, never>> = async (args) => {
   const { namedInputs, params } = args;
   const model = params.model === "auto-free" ? undefined : params.model;
-  const chosen = selectFreeVideoProvider([getWan22FreeProvider()], {
+  const providers = [getWan22FreeProvider()];
+  const request = {
     model,
     hasFirstFrame: Boolean(namedInputs.imagePath),
     durationSeconds: params.duration ?? 2,
     hasLastFrame: Boolean(namedInputs.lastFrameImagePath),
     hasReferenceImages: Boolean(namedInputs.referenceImages?.length),
     generateAudio: params.generateAudio === true,
-  });
+  };
 
-  if (chosen.id === WAN22_FREE_PROVIDER_ID) {
-    return movieWan22ZeroGpuAgent({
-      ...args,
-      params: { ...params, model: WAN22_FREE_MODEL },
-    });
-  }
-  // A newly registered provider cannot accidentally reach an unknown
-  // implementation or one of MulmoCast's paid agents.
-  throw new Error("Selected free video provider has no registered adapter");
+  // Reject unapproved/non-free models before touching the local disk.
+  selectFreeVideoProvider(providers, request);
+  const buffer = await runLocalFreeVideoExecution({
+    ledgerPath: process.env.SNS_VIDEO_FREE_VIDEO_LEDGER_PATH ?? "",
+    imagePath: namedInputs.imagePath ?? "",
+    prompt: namedInputs.prompt ?? "",
+    request,
+    providers,
+    generate: async (chosen) => {
+      if (chosen.id === WAN22_FREE_PROVIDER_ID) {
+        const result = await movieWan22ZeroGpuAgent({ ...args, params: { ...params, model: WAN22_FREE_MODEL } });
+        if (!result?.buffer) throw new Error("Wan2.2 did not return a video buffer; no automatic retry");
+        return result.buffer;
+      }
+      // This path is deliberately closed until a second provider is explicitly
+      // registered and approved, never a fallback to paid MulmoCast models.
+      throw new Error("Selected free provider has no registered adapter");
+    },
+  });
+  return { buffer };
 };
 
 const movieFreeRouterAgentInfo: AgentFunctionInfo = {
@@ -43,7 +56,7 @@ const movieFreeRouterAgentInfo: AgentFunctionInfo = {
   author: "SNS Video Factory contributors",
   repository: "https://github.com/ToramaruA/sns-video-factory",
   license: "AGPL-3.0-only",
-  environmentVariables: ["SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT"],
+  environmentVariables: ["SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT", "SNS_VIDEO_FREE_VIDEO_LEDGER_PATH"],
 };
 
 export default movieFreeRouterAgentInfo;

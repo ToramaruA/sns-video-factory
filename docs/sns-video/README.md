@@ -38,6 +38,7 @@
 | [COST_SECURITY_AND_OPERATIONS.md](./COST_SECURITY_AND_OPERATIONS.md) | 無料運用、モデル選定、安全性、著作権、アクセス制御、運用 |
 | [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) | 段階ごとの実装・検証基準、作業優先順位、未決事項 |
 | [FREE_I2V_AGENT.md](./FREE_I2V_AGENT.md) | 複数AIに拡張できる無料画像→動画の共通Agent・接続先・安全条件 |
+| [LOCAL_FREE_VIDEO_EXECUTION.md](./LOCAL_FREE_VIDEO_EXECUTION.md) | Phase 2の生成ジョブ排他予約・MP4キャッシュ接続と安全条件 |
 
 ## 状況（2026-11-15時点）
 
@@ -48,7 +49,8 @@
 | ローカルMP4を2本結合するMulmoCastのテスト | **PR [#1](https://github.com/ToramaruA/sns-video-factory/pull/1) をマージ済み**。専用GitHub Actionsおよび元のNode.js CIが成功 |
 | 継続無料の画像→動画モデルの外部接続 | **技術実証済み**：[直接Agentからの生成テスト](https://github.com/ToramaruA/sns-video-factory/actions/runs/43675580505)は成功。ただし本番利用条件は保留 |
 | 無料動画生成の共通Agent | **[PR #4](https://github.com/ToramaruA/sns-video-factory/pull/4)をmainにマージ済み**。Wan2.2実験経路のみ・既定無効 |
-| Phase 2の無料枠・二重送信防止 | **PR #5に基礎実装を追加**。純粋な状態遷移・ローカルのテスト用台帳のみ。本番DB/キューとは未接続 |
+| Phase 2の無料枠・二重送信防止 | **[PR #5](https://github.com/ToramaruA/sns-video-factory/pull/5)をmainへマージ済み**。ジョブ状態とローカル台帳は実装済み |
+| Phase 2の台帳→動画生成接続とキャッシュ | **PR #6で実装中**。開発用の単一ホスト経路。共有Web・本番DB/キューとは未接続 |
 | Web UI、共有ログイン、データベース、永続ストレージ | **未実装** |
 | GitHub Actionsが本番映像処理に最適か | **未決定** |
 

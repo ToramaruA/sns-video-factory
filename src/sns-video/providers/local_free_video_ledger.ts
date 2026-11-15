@@ -74,6 +74,11 @@ export const reserveLocalFreeVideoAttempt = async (path: string, id: string, can
   transact(path, (snapshot) => {
     const job = snapshot.jobs[id];
     if (!job) throw new Error("Unknown job ID");
+    // For the single-host experiment, one active inference across the whole
+    // local ledger is the conservative limit. If a worker crashes, the prior
+    // reservation deliberately blocks new submissions until manual recovery.
+    const otherRunning = Object.values(snapshot.jobs).some((item) => item.id !== id && item.status === "running");
+    if (otherRunning) return { action: "wait", reason: "Another local free-video inference is already reserved", job };
     const decision = planFreeVideoAttempt(job, candidates, snapshot.runtime);
     // Atomic, durable "running" reservation BEFORE a provider can be invoked.
     snapshot.jobs[id] = decision.job;
