@@ -9,7 +9,7 @@
 - `VideoBrief`: 目的、対象視聴者、SNS、言語、希望尺、参考写真・ロゴ・動画（asset IDと意図）
 - `StoryboardProposal`: 企画案ID、revision、タイトル、演出コンセプト、統一ビジュアルスタイル、個別カット
 - `StoryboardShot`: 永続beat ID、秒数、画面内容、静止画の指示、動きの指示、参考素材のID
-- `createStoryboardPlanningState`: **2案以上**・一意なID・有効な参照・全カットの合計尺を検査して登録
+- `createStoryboardPlanningState`: **1案から開始可能**。必要なときだけ複数案を登録。一意なID・有効な参照・全カットの合計尺を検査
 - `selectStoryboardProposal`: 対象案の正確なrevisionに対する明示的な承認
 - `reviseStoryboardProposal`: 1案の版を進める。選択済みの案を修正すると**その承認を失効**させ、別案は保持
 - `buildApprovedStoryboardDraft`: 承認済み案からMulmoScript v1.1形式（720×1280、画像と動きのプロンプト付き）を組み立て、MulmoCast本来のZodスキーマで検証
@@ -25,7 +25,7 @@ MulmoCastのスキーマには既定の画像・動画プロバイダーが存�
 
 ## 未実装の範囲
 
-- AIディレクターによる企画案の自動発案・推敲・質の評価
+- AIディレクターによる企画案の自動発案・推敲・質の評価（MulmoCast既存の `src/tools/story_to_script.ts`・`create_mulmo_script_interactively.ts` を優先して再利用し、生成処理をゼロから作り直さない）
 - Web画面・ログイン・利用権限・共同編集・DBへの状態保存・監査履歴
 - 承認済み画像の保存先と、参考素材への実際の安全なアクセス
 - モデル能力/無料枠に合わせた尺の調整、画像生成・動画生成ジョブと接続
