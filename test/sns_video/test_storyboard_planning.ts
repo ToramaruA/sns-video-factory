@@ -2,13 +2,15 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { mulmoScriptSchema } from "../../src/types/schema.js";
 import {
+  applyStoryboardAssistantReply,
+  approveCurrentStoryboard,
   buildApprovedStoryboardDraft,
   createStoryboardPlanningState,
-  initializeSelectedShotReviews,
-  reviseStoryboardProposal,
-  selectStoryboardProposal,
+  getStoryboardChatContext,
+  initializeApprovedShotReviews,
+  submitStoryboardFeedback,
 } from "../../src/sns-video/director/storyboard_planning.js";
-import type { StoryboardProposal, VideoBrief } from "../../src/sns-video/director/storyboard_planning.js";
+import type { Storyboard, VideoBrief } from "../../src/sns-video/director/storyboard_planning.js";
 
 const brief = (): VideoBrief => ({
   projectId: "concert",
@@ -24,10 +26,9 @@ const brief = (): VideoBrief => ({
   ],
 });
 
-const proposal = (id: string): StoryboardProposal => ({
-  proposalId: id,
+const storyboard = (): Storyboard => ({
   revision: 1,
-  title: `演奏会の予告・${id}`,
+  title: "室内楽コンサートの予告",
   concept: "Introduce the evening through instrument details",
   visualStyle: "Cinematic warm lighting",
   shots: [
@@ -50,124 +51,139 @@ const proposal = (id: string): StoryboardProposal => ({
   ],
 });
 
-const session = () => createStoryboardPlanningState(brief(), [proposal("a"), proposal("b")]);
-const selected = () => selectStoryboardProposal(session(), { proposalId: "a", revision: 1, reviewerId: "director" });
+const session = () => createStoryboardPlanningState(brief(), storyboard());
+const approved = () => approveCurrentStoryboard(session(), { revision: 1, reviewerId: "director" });
 
-test("accepts one concept, supports alternatives, and rejects duplicate proposal IDs", () => {
-  assert.throws(() => createStoryboardPlanningState(brief(), []));
-  const single = createStoryboardPlanningState(brief(), [proposal("a")]);
-  assert.equal(single.proposals.length, 1);
-  const approved = selectStoryboardProposal(single, { proposalId: "a", revision: 1, reviewerId: "director" });
-  assert.equal(buildApprovedStoryboardDraft(approved).script.beats.length, 2);
-  assert.throws(() => createStoryboardPlanningState(brief(), [proposal("a"), proposal("a")]));
-  assert.throws(() => createStoryboardPlanningState(brief(), [proposal("bad/path"), proposal("b")]));
-  assert.equal(session().proposals.length, 2);
+test("starts with exactly one storyboard and revision one", () => {
+  const created = session();
+  assert.equal(created.current.revision, 1);
+  assert.equal(created.history.length, 1);
+  assert.deepEqual(created.turns, []);
+  assert.equal(created.approved, undefined);
+  assert.throws(() => createStoryboardPlanningState(brief(), { ...storyboard(), revision: 2 }));
 });
 
-test("rejects malformed brief, duplicate asset IDs, and invalid durations", () => {
-  assert.throws(() => createStoryboardPlanningState({ ...brief(), targetDurationSeconds: 0 }, [proposal("a"), proposal("b")]));
-  assert.throws(() => createStoryboardPlanningState({ ...brief(), platform: "unknown" as VideoBrief["platform"] }, [proposal("a"), proposal("b")]));
-  const duplicateReferences = [...brief().references, { ...brief().references[0] }];
-  assert.throws(() => createStoryboardPlanningState({ ...brief(), references: duplicateReferences }, [proposal("a"), proposal("b")]));
-  const altered = proposal("a");
-  altered.shots[0].durationSeconds = Number.POSITIVE_INFINITY;
-  assert.throws(() => createStoryboardPlanningState(brief(), [altered, proposal("b")]));
-});
-
-test("validates total length, unique shot IDs, and image/motion descriptions", () => {
-  const badDuration = proposal("a");
-  badDuration.shots[1].durationSeconds = 3;
-  assert.throws(() => createStoryboardPlanningState(brief(), [badDuration, proposal("b")]));
-  const duplicateBeat = proposal("a");
+test("rejects malformed brief, duplicate asset IDs, and invalid shot data", () => {
+  assert.throws(() => createStoryboardPlanningState({ ...brief(), targetDurationSeconds: 0 }, storyboard()));
+  assert.throws(() => createStoryboardPlanningState({ ...brief(), platform: "unknown" as VideoBrief["platform"] }, storyboard()));
+  assert.throws(() => createStoryboardPlanningState({ ...brief(), references: [...brief().references, { ...brief().references[0] }] }, storyboard()));
+  const duplicateBeat = storyboard();
   duplicateBeat.shots[1].beatId = "shot_01";
-  assert.throws(() => createStoryboardPlanningState(brief(), [duplicateBeat, proposal("b")]));
-  const blankPrompt = proposal("a");
-  blankPrompt.shots[0].moviePrompt = " ";
-  assert.throws(() => createStoryboardPlanningState(brief(), [blankPrompt, proposal("b")]));
+  assert.throws(() => createStoryboardPlanningState(brief(), duplicateBeat));
+  const badDuration = storyboard();
+  badDuration.shots[0].durationSeconds = Infinity;
+  assert.throws(() => createStoryboardPlanningState(brief(), badDuration));
+  const blankPrompt = storyboard();
+  blankPrompt.shots[0].imagePrompt = " ";
+  assert.throws(() => createStoryboardPlanningState(brief(), blankPrompt));
 });
 
-test("reference IDs must exist and cannot be repeated in the same shot", () => {
-  const unknown = proposal("a");
-  unknown.shots[0].referenceAssetIds = ["not-registered"];
-  assert.throws(() => createStoryboardPlanningState(brief(), [unknown, proposal("b")]));
-  const duplicate = proposal("a");
+test("a shot's reference asset must belong to the brief and be unique", () => {
+  const unknown = storyboard();
+  unknown.shots[0].referenceAssetIds = ["other"];
+  assert.throws(() => createStoryboardPlanningState(brief(), unknown));
+  const duplicate = storyboard();
   duplicate.shots[0].referenceAssetIds = ["photo1", "photo1"];
-  assert.throws(() => createStoryboardPlanningState(brief(), [duplicate, proposal("b")]));
+  assert.throws(() => createStoryboardPlanningState(brief(), duplicate));
 });
 
-test("session copies reference lists so upstream mutation does not rewrite a proposal", () => {
-  const input = proposal("a");
+test("input data and chat context are copied rather than exposed for mutation", () => {
   const inputBrief = brief();
-  const created = createStoryboardPlanningState(inputBrief, [input, proposal("b")]);
+  const input = storyboard();
+  const created = createStoryboardPlanningState(inputBrief, input);
   input.shots[0].referenceAssetIds.push("movie1");
   inputBrief.references[0].assetId = "other";
-  assert.deepEqual(created.proposals[0].shots[0].referenceAssetIds, ["photo1"]);
+  const context = getStoryboardChatContext(created);
+  context.storyboard.shots[0].imagePrompt = "changed";
+  context.brief.references[0].assetId = "changed";
+  assert.deepEqual(created.current.shots[0].referenceAssetIds, ["photo1"]);
+  assert.equal(created.current.shots[0].imagePrompt, "A wooden violin under stage lights");
   assert.equal(created.brief.references[0].assetId, "logo1");
 });
 
-test("selection requires explicit human actor and exact concept revision", () => {
+test("user can say 'make the second shot shorter' without inventing alternative proposals", () => {
+  const pending = submitStoryboardFeedback(session(), { turnId: "turn_01", expectedRevision: 1, message: "2カット目を短くして" });
+  assert.equal(pending.pending?.userMessage, "2カット目を短くして");
+  assert.equal(pending.current.revision, 1);
+  const next = storyboard();
+  next.revision = 2;
+  next.shots[1].durationSeconds = 3;
+  const revised = applyStoryboardAssistantReply(pending, { turnId: "turn_01", message: "2カット目を3秒にしました", revisedStoryboard: next });
+  assert.equal(revised.current.revision, 2);
+  assert.equal(revised.current.shots[1].durationSeconds, 3);
+  assert.equal(revised.history.length, 2);
+  assert.equal(revised.turns[0].userMessage, "2カット目を短くして");
+  assert.equal(revised.turns[0].assistantMessage, "2カット目を3秒にしました");
+  assert.equal(revised.pending, undefined);
+  assert.equal(revised.approved, undefined);
+  const confirmed = approveCurrentStoryboard(revised, { revision: 2, reviewerId: "director" });
+  assert.equal(buildApprovedStoryboardDraft(confirmed).actualDurationSeconds, 7);
+});
+
+test("assistant may ask a clarifying question or reply without changing the storyboard", () => {
+  const state = submitStoryboardFeedback(session(), { turnId: "turn_01", expectedRevision: 1, message: "少し変えたい" });
+  const replied = applyStoryboardAssistantReply(state, { turnId: "turn_01", message: "どの部分を変更しますか？" });
+  assert.equal(replied.current.revision, 1);
+  assert.equal(replied.history.length, 1);
+  assert.equal(replied.turns[0].resultingRevision, 1);
+  const next = submitStoryboardFeedback(replied, { turnId: "turn_02", expectedRevision: 1, message: "冒頭を派手に" });
+  assert.equal(next.pending?.turnId, "turn_02");
+});
+
+test("stale, simultaneous and duplicated messages are rejected", () => {
   const state = session();
-  assert.throws(() => selectStoryboardProposal(state, { proposalId: "a", revision: 2, reviewerId: "director" }));
-  assert.throws(() => selectStoryboardProposal(state, { proposalId: "nope", revision: 1, reviewerId: "director" }));
-  assert.throws(() => selectStoryboardProposal(state, { proposalId: "a", revision: 1, reviewerId: "" }));
-  const accepted = selected();
-  assert.equal(accepted.selected?.proposalId, "a");
-  assert.equal(state.selected, undefined);
-  assert.throws(() => selectStoryboardProposal(accepted, { proposalId: "b", revision: 1, reviewerId: "director" }));
+  assert.throws(() => submitStoryboardFeedback(state, { turnId: "turn_01", expectedRevision: 2, message: "change" }));
+  assert.throws(() => submitStoryboardFeedback(state, { turnId: "bad/id", expectedRevision: 1, message: "change" }));
+  assert.throws(() => submitStoryboardFeedback(state, { turnId: "turn_01", expectedRevision: 1, message: " " }));
+  const pending = submitStoryboardFeedback(state, { turnId: "turn_01", expectedRevision: 1, message: "change" });
+  assert.throws(() => submitStoryboardFeedback(pending, { turnId: "turn_02", expectedRevision: 1, message: "another" }));
+  assert.throws(() => applyStoryboardAssistantReply(pending, { turnId: "turn_02", message: "bad reply" }));
+  const replied = applyStoryboardAssistantReply(pending, { turnId: "turn_01", message: "ok" });
+  assert.throws(() => submitStoryboardFeedback(replied, { turnId: "turn_01", expectedRevision: 1, message: "duplicate" }));
+  assert.throws(() => applyStoryboardAssistantReply(replied, { turnId: "turn_01", message: "again" }));
 });
 
-test("revision increments once and invalidates only the modified selected concept", () => {
-  const state = selected();
-  const next = { ...proposal("a"), revision: 2, concept: "New proposal" };
-  const revised = reviseStoryboardProposal(state, "a", 1, next);
-  assert.equal(revised.selected, undefined);
-  assert.equal(revised.proposals[0].revision, 2);
-  assert.equal(revised.proposals[1], state.proposals[1]);
-  assert.equal(state.selected?.revision, 1);
-  assert.throws(() => reviseStoryboardProposal(revised, "a", 1, { ...next, revision: 3 }));
-  assert.throws(() => reviseStoryboardProposal(state, "a", 1, { ...next, revision: 3 }));
-  assert.throws(() => reviseStoryboardProposal(state, "a", 1, { ...next, proposalId: "other" }));
+test("LLM may only return exactly the next revision, with validated references", () => {
+  const state = submitStoryboardFeedback(session(), { turnId: "turn_01", expectedRevision: 1, message: "change" });
+  assert.throws(() => applyStoryboardAssistantReply(state, { turnId: "turn_01", message: "oops", revisedStoryboard: storyboard() }));
+  assert.throws(() =>
+    applyStoryboardAssistantReply(state, { turnId: "turn_01", message: "oops", revisedStoryboard: { ...storyboard(), revision: 3 } }),
+  );
+  const invalid = storyboard();
+  invalid.revision = 2;
+  invalid.shots[0].referenceAssetIds = ["unknown"];
+  assert.throws(() => applyStoryboardAssistantReply(state, { turnId: "turn_01", message: "oops", revisedStoryboard: invalid }));
 });
 
-test("revising an unselected proposal does not discard another approved selection", () => {
-  const state = selected();
-  const revised = reviseStoryboardProposal(state, "b", 1, { ...proposal("b"), revision: 2 });
-  assert.deepEqual(revised.selected, state.selected);
+test("current approval is revision-locked and a new feedback request invalidates it", () => {
+  const state = approved();
+  assert.equal(state.approved?.revision, 1);
+  assert.throws(() => approveCurrentStoryboard(state, { revision: 1, reviewerId: "director" }));
+  const pending = submitStoryboardFeedback(state, { turnId: "turn_01", expectedRevision: 1, message: "冒頭変えて" });
+  assert.equal(pending.approved, undefined);
+  assert.throws(() => approveCurrentStoryboard(pending, { revision: 1, reviewerId: "director" }));
+  assert.throws(() => buildApprovedStoryboardDraft(pending));
+  assert.throws(() => initializeApprovedShotReviews(pending));
+  assert.throws(() => approveCurrentStoryboard(session(), { revision: 2, reviewerId: "director" }));
 });
 
-test("unapproved or revised storyboard cannot be converted or start shot review", () => {
+test("approved storyboard becomes a validated MulmoScript design draft but cannot execute generation", () => {
   assert.throws(() => buildApprovedStoryboardDraft(session()));
-  assert.throws(() => initializeSelectedShotReviews(session()));
-  const changed = reviseStoryboardProposal(selected(), "a", 1, { ...proposal("a"), revision: 2 });
-  assert.throws(() => buildApprovedStoryboardDraft(changed));
-  assert.throws(() => initializeSelectedShotReviews(changed));
+  const result = buildApprovedStoryboardDraft(approved());
+  assert.equal(result.executionAllowed, false);
+  assert.deepEqual(result.script.canvasSize, { width: 720, height: 1280 });
+  assert.equal(result.script.audioParams.suppressSpeech, true);
+  assert.deepEqual(result.script.beats.map((beat) => beat.id), ["shot_01", "shot_02"]);
+  assert.equal(result.actualDurationSeconds, 10);
+  assert.deepEqual(result.referencesByBeat[1].assetIds, ["logo1", "movie1"]);
+  assert.equal(mulmoScriptSchema.safeParse(result.script).success, true);
+  assert.equal("movieParams" in result.script, false);
+  assert.equal("imageParams" in result.script, false);
 });
 
-test("selected design creates validated 9:16 Japanese MulmoScript without executing generation", () => {
-  const state = selected();
-  const draft = buildApprovedStoryboardDraft(state);
-  assert.equal(draft.executionAllowed, false);
-  assert.equal(draft.script.$mulmocast.version, "1.1");
-  assert.deepEqual(draft.script.canvasSize, { width: 720, height: 1280 });
-  assert.equal(draft.script.audioParams.suppressSpeech, true);
-  assert.deepEqual(draft.script.beats.map((beat) => beat.id), ["shot_01", "shot_02"]);
-  assert.equal(draft.script.beats[0].duration, 4);
-  assert.match(draft.script.beats[0].imagePrompt, /Cinematic warm lighting/);
-  assert.deepEqual(draft.referencesByBeat[1], { beatId: "shot_02", assetIds: ["logo1", "movie1"] });
-  assert.equal(mulmoScriptSchema.safeParse(draft.script).success, true);
-  // The draft intentionally has no configured paid/unknown providers or runnable job.
-  assert.equal("movieParams" in draft.script, false);
-  assert.equal("imageParams" in draft.script, false);
-  assert.equal("references" in draft.script.beats[0], false);
-});
-
-test("review-state bridge uses the selected proposal's stable beat IDs", () => {
-  const reviews = initializeSelectedShotReviews(selected());
+test("approved storyboard initializes the existing per-shot review state", () => {
+  assert.throws(() => initializeApprovedShotReviews(session()));
+  const reviews = initializeApprovedShotReviews(approved());
   assert.deepEqual(reviews.map((shot) => shot.beatId), ["shot_01", "shot_02"]);
   assert.deepEqual(reviews.map((shot) => shot.imageRevision), [1, 1]);
-  const reordered = proposal("a");
-  reordered.shots.reverse();
-  const state = createStoryboardPlanningState(brief(), [reordered, proposal("b")]);
-  const confirmed = selectStoryboardProposal(state, { proposalId: "a", revision: 1, reviewerId: "director" });
-  assert.deepEqual(initializeSelectedShotReviews(confirmed).map((shot) => shot.beatId), ["shot_02", "shot_01"]);
 });
