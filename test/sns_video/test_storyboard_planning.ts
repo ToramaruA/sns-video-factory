@@ -146,9 +146,7 @@ test("stale, simultaneous and duplicated messages are rejected", () => {
 test("LLM may only return exactly the next revision, with validated references", () => {
   const state = submitStoryboardFeedback(session(), { turnId: "turn_01", expectedRevision: 1, message: "change" });
   assert.throws(() => applyStoryboardAssistantReply(state, { turnId: "turn_01", message: "oops", revisedStoryboard: storyboard() }));
-  assert.throws(() =>
-    applyStoryboardAssistantReply(state, { turnId: "turn_01", message: "oops", revisedStoryboard: { ...storyboard(), revision: 3 } }),
-  );
+  assert.throws(() => applyStoryboardAssistantReply(state, { turnId: "turn_01", message: "oops", revisedStoryboard: { ...storyboard(), revision: 3 } }));
   const invalid = storyboard();
   invalid.revision = 2;
   invalid.shots[0].referenceAssetIds = ["unknown"];
@@ -173,7 +171,10 @@ test("approved storyboard becomes a validated MulmoScript design draft but canno
   assert.equal(result.executionAllowed, false);
   assert.deepEqual(result.script.canvasSize, { width: 720, height: 1280 });
   assert.equal(result.script.audioParams.suppressSpeech, true);
-  assert.deepEqual(result.script.beats.map((beat) => beat.id), ["shot_01", "shot_02"]);
+  assert.deepEqual(
+    result.script.beats.map((beat) => beat.id),
+    ["shot_01", "shot_02"],
+  );
   assert.equal(result.actualDurationSeconds, 10);
   assert.deepEqual(result.referencesByBeat[1].assetIds, ["logo1", "movie1"]);
   assert.equal(mulmoScriptSchema.safeParse(result.script).success, true);
@@ -184,6 +185,12 @@ test("approved storyboard becomes a validated MulmoScript design draft but canno
 test("approved storyboard initializes the existing per-shot review state", () => {
   assert.throws(() => initializeApprovedShotReviews(session()));
   const reviews = initializeApprovedShotReviews(approved());
-  assert.deepEqual(reviews.map((shot) => shot.beatId), ["shot_01", "shot_02"]);
-  assert.deepEqual(reviews.map((shot) => shot.imageRevision), [1, 1]);
+  assert.deepEqual(
+    reviews.map((shot) => shot.beatId),
+    ["shot_01", "shot_02"],
+  );
+  assert.deepEqual(
+    reviews.map((shot) => shot.imageRevision),
+    [1, 1],
+  );
 });
