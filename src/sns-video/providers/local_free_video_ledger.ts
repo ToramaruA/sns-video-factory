@@ -32,7 +32,7 @@ const readSnapshot = async (path: string): Promise<LocalFreeVideoLedger> => {
     }
     return data;
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === "ENOENT") return newLedger();
+    if ((error as { code?: string }).code === "ENOENT") return newLedger();
     throw error;
   }
 };
