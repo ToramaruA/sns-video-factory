@@ -301,6 +301,18 @@ export const createMulmoScriptFromText = async (
         environmentVariables: [],
       }
     : undefined;
+  const schemaAgentInfo: AgentFunctionInfo =
+    llm === "mock"
+      ? {
+          ...validateSchemaAgent,
+          agent: async (args) => {
+            const checked = await validateSchemaAgent.agent(args);
+            console.error("OFFLINE schema input:", String(args.namedInputs.text).slice(0, 240));
+            console.error("OFFLINE schema result:", JSON.stringify(checked).slice(0, 480));
+            return checked;
+          },
+        }
+      : validateSchemaAgent;
   const graph = new GraphAI(
     graphDataText,
     {
@@ -309,7 +321,7 @@ export const createMulmoScriptFromText = async (
       anthropicAgent,
       geminiAgent,
       groqAgent,
-      validateSchemaAgent,
+      validateSchemaAgent: schemaAgentInfo,
       fileWriteAgent,
       ...(mockAgentInfo ? { mediaMockAgent: mockAgentInfo } : {}),
     },
