@@ -6,6 +6,9 @@ on:
     paths:
       - '.github/workflows/sns-video-offline-e2e.yml'
       - 'experiments/04-offline-e2e/**'
+      - 'src/sns-video/safety/**'
+      - 'src/cli/commands/movie/**'
+      - 'test/sns_video/test_no_paid_api.ts'
       - 'src/tools/create_mulmo_script_from_url.ts'
       - 'experiments/01-merge-smoke/verify_video.py'
   push:
@@ -13,6 +16,9 @@ on:
     paths:
       - '.github/workflows/sns-video-offline-e2e.yml'
       - 'experiments/04-offline-e2e/**'
+      - 'src/sns-video/safety/**'
+      - 'src/cli/commands/movie/**'
+      - 'test/sns_video/test_no_paid_api.ts'
       - 'src/tools/create_mulmo_script_from_url.ts'
       - 'experiments/01-merge-smoke/verify_video.py'
 
@@ -45,6 +51,8 @@ jobs:
           yarn install --frozen-lockfile
       - name: Build MulmoCast
         run: yarn build
+      - name: Test SNS fail-closed provider policy (offline, no secrets)
+        run: ./node_modules/.bin/tsx --test test/sns_video/test_no_paid_api.ts
       - name: Generate script and render via the existing MulmoCast CLI (NO AI API)
         run: bash experiments/04-offline-e2e/run.sh
       - name: Upload MP4 and script for inspection
