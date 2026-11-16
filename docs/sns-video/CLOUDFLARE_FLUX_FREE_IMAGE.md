@@ -61,6 +61,16 @@ node lib/cli/bin.js movie ./your-safe-flux-script.json --sns-free-only
 
 **注意:** `--sns-free-only`を外さないこと。通常のMulmoCast CLIでは有料既定APIが生きている。Workers Freeという設定が実際に成立している場合のみに限って実APIを使う。APIキーだけでFreeと判定することはできず、`CONFIRMED=1`は**運用者による確認**であって自動の契約監査ではない。アカウントがPaidになったら絶対に確認フラグを外す。
 
+## GitHub Actionsから実画像を1枚だけ生成する（手動・任意）
+
+GitHubの[Actions → SNS Video Factory - Cloudflare FLUX real image (MANUAL ONLY)](https://github.com/ToramaruA/sns-video-factory/actions/workflows/sns-video-cloudflare-flux-manual.yml)から、アカウントが**Workers Free**であることを確認した場合に限り`Run workflow`を押せる。チェック項目は**既定OFF**。無確認の実行はしない。
+
+その前に、リポジトリの**Settings → Secrets and variables → Actions → New repository secret**へ、`CLOUDFLARE_ACCOUNT_ID`と`CLOUDFLARE_API_TOKEN`をそれぞれ登録する。GitHubのソースやPR本文には秘密情報を記載しない。これは手動実行であり、**CIのpush/PRでは実APIを呼ばない**。
+
+1つのMulmoScript beatだけが`imagePrompt`を持つので、画像生成は1件（自動再試行の再送防止はAgent側で実装）。動画生成AIは呼ばず、既存FFmpegで**2秒・720×1280の静止画ベースMP4**へ書き出す。ActionsのartifactからMP4と画像を確認できる。
+
+実際の生成が成功する前にFLUX画質や縦型構図を保証しない。Freeプランであっても利用限度やAPIアクセス制限で失敗する可能性がある。ユーザーが無料枠を消費したくない場合は、この手順は実行しない。
+
 ## オフラインのテスト（キー不要）
 
 ```bash
