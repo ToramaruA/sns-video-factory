@@ -23,10 +23,7 @@ export const assertGroqFreePlanConfigured = (env: Record<string, string | undefi
  * Reuse the exact GraphAI path from MulmoCast, pinning a known Groq Free Plan
  * model; no OpenAI/Gemini fallback or configurable provider/model.
  */
-export const createMulmoScriptWithGroqFreePlan = async (
-  text: string,
-  params: Omit<ScriptingParams, "llm" | "llm_model">,
-): Promise<string> => {
+export const createMulmoScriptWithGroqFreePlan = async (text: string, params: Omit<ScriptingParams, "llm" | "llm_model">): Promise<string> => {
   assertGroqFreePlanConfigured(process.env);
   return createMulmoScriptFromText(text, {
     ...params,
