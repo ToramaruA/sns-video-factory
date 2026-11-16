@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import path from "path";
-import { GraphAI, GraphAILogger, GraphData, type AgentFunction } from "graphai";
+import { GraphAI, GraphAILogger, GraphData, type AgentFunction, type AgentFunctionInfo } from "graphai";
 import { openAIAgent } from "@graphai/openai_agent";
 import { anthropicAgent } from "@graphai/anthropic_agent";
 import { geminiAgent } from "@graphai/gemini_agent";
@@ -287,6 +287,20 @@ export const createMulmoScriptFromText = async (
   mkdir(cacheDirPath);
 
   const { agent, model, max_tokens } = llmPair(llm, llm_model);
+  const mockAgentInfo: AgentFunctionInfo | undefined = offlineMockLLMAgent
+    ? {
+        name: "mediaMockAgent",
+        agent: offlineMockLLMAgent,
+        mock: offlineMockLLMAgent,
+        samples: [],
+        description: "Injected offline GraphAI script-generation fixture",
+        category: ["llm"],
+        author: "SNS Video Factory",
+        repository: "https://github.com/ToramaruA/sns-video-factory",
+        license: "MIT",
+        environmentVariables: [],
+      }
+    : undefined;
   const graph = new GraphAI(
     graphDataText,
     {
@@ -297,7 +311,7 @@ export const createMulmoScriptFromText = async (
       groqAgent,
       validateSchemaAgent,
       fileWriteAgent,
-      ...(offlineMockLLMAgent ? { mediaMockAgent: offlineMockLLMAgent } : {}),
+      ...(mockAgentInfo ? { mediaMockAgent: mockAgentInfo } : {}),
     },
     { config: llm === "mock" ? {} : settings2GraphAIConfig(undefined, process.env) },
   );
