@@ -80,6 +80,9 @@ export const assertSnsNoPaidApiMovie = (
     if (style.avatarParams || style.lipSyncParams || style.remotionParams) {
       problems.push(`${path}: avatars, lip-sync and Remotion extras are not approved`);
     }
+    if (Object.values(style.speechParams.speakers).some((speaker) => speaker.avatar !== undefined)) {
+      problems.push(`${path}.speechParams: speaker avatar packages may download or render additional media`);
+    }
     if (style.audioParams.bgm) localSource(style.audioParams.bgm, `${path}.audioParams.bgm`, problems);
     for (const [name, ref] of Object.entries(style.imageParams?.images ?? {})) {
       localImageOrMovie(ref, `${path}.imageParams.images[${name}]`, problems);
