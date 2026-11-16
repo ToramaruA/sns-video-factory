@@ -144,6 +144,13 @@ test("a presentation style override cannot re-enable a billable provider", () =>
   blocked(script, /presentationStyle.imageParams/, { presentationStyle });
 });
 
+test("speaker-level avatar packages are rejected even when no beat requests avatarParams", () => {
+  const s = makeScript({ speechParams: { speakers: {
+    Presenter: { voiceId: "shimmer", avatar: { source: "https://example.com/avatar/" } },
+  } } });
+  blocked(s, /speaker avatar packages/);
+});
+
 test("Groq free planning requires account Free Plan attestation AND its API key", () => {
   assert.equal(GROQ_FREE_PLANNING_MODEL, "openai/gpt-oss-20b");
   assert.throws(() => assertGroqFreePlanConfigured({}), /CONFIRMED/);
