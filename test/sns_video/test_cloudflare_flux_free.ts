@@ -1,5 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { MulmoScriptMethods } from "../../src/methods/mulmo_script.js";
+import { assertSnsNoPaidApiMovie } from "../../src/sns-video/safety/no_paid_api.js";
 import { generateCloudflareFluxImage } from "../../src/agents/image_cloudflare_flux_agent.js";
 import { assertCloudflareFreePlanConfigured, CLOUDFLARE_FLUX_MODEL } from "../../src/sns-video/safety/cloudflare_free_plan.js";
 
@@ -11,6 +14,14 @@ const freeEnv = {
 // Minimal test bytes, not a valid standalone photograph. The production caller
 // hands the returned JPEG bytes to MulmoCast's image/FFmpeg pipeline.
 const jpeg = Buffer.from([0xff, 0xd8, 0xff, 0xd9]);
+
+test("the manual real-image script validates and passes the free-only preflight without any API call", () => {
+  const script = MulmoScriptMethods.validate(JSON.parse(readFileSync("experiments/05-cloudflare-flux-one-shot/mulmo_script.json", "utf8")));
+  assert.equal(script.beats.length, 1);
+  assert.equal(script.imageParams.provider, "cloudflare_free");
+  assert.equal(script.movieParams.provider, "mock");
+  assert.doesNotThrow(() => assertSnsNoPaidApiMovie(script, { env: freeEnv }));
+});
 
 test("official REST endpoint, exact FLUX model and Bearer header; one mock network request", async () => {
   let calls = 0;
