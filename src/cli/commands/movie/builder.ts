@@ -14,6 +14,11 @@ export const builder = (yargs: Argv) =>
       describe: "Image output directory",
       type: "string",
     })
+    .option("sns-free-only", {
+      describe: "Fail closed unless this movie uses only local assets and bundled mock generators (SNS MVP safe mode)",
+      type: "boolean",
+      default: false,
+    })
     .option("c", {
       alias: "caption",
       describe: "Video captions",

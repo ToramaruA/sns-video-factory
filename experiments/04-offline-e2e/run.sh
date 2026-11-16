@@ -26,7 +26,7 @@ ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'color=c=0xb52c3d:s=720x1280'
 
 # Run the actual built MulmoCast CLI. The third beat uses the existing
 # mediaMockAgent image-generation path. No new movie/FFmpeg implementation.
-node lib/cli/bin.js movie "$HERE/generated/offline-sns.json"
+node lib/cli/bin.js movie "$HERE/generated/offline-sns.json" --sns-free-only
 
 VIDEO="$ROOT/output/offline-sns_ja.mp4"
 python3 "$ROOT/experiments/01-merge-smoke/verify_video.py" "$VIDEO"
