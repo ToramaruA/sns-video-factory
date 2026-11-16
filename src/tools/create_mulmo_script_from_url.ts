@@ -328,6 +328,11 @@ export const createMulmoScriptFromText = async (
 
   const result = await graph.run<{ path: string }>();
   if (!result?.writeJSON?.path) {
+    if (llm === "mock") {
+      // Only log GraphAI's diagnostic graph result for synthetic offline tests.
+      // Real user prompts and LLM output must never be logged here.
+      console.error("Offline GraphAI debug:", JSON.stringify(result));
+    }
     throw new Error("Could not generate a valid MulmoScript from source text");
   }
   writingMessage(result.writeJSON.path);
