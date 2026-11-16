@@ -323,6 +323,10 @@ export const createMulmoScriptFromText = async (
   graph.injectValue("llmAgent", agent);
   graph.injectValue("llmModel", model);
   graph.injectValue("maxTokens", max_tokens);
+  if (llm === "mock") {
+    // Synthetic test only: observe GraphAI node state without exposing real prompts.
+    graph.registerCallback(({ nodeId, state }) => console.error("OFFLINE GraphAI node:", nodeId, state));
+  }
   if (!verbose) graph.registerCallback(cliLoadingPlugin({ nodeId: "mulmoScript", message: "Generating script..." }));
   graph.registerCallback(createUsageCallback(usageCollector));
 
