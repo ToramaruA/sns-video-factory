@@ -130,8 +130,9 @@ export const assertSnsNoPaidApiMovie = (
     if (beat.image) localImageOrMovie(beat.image, `${path}.image`, problems);
     if (beat.imagePrompt) {
       allowedSafeImage({ ...presentationStyle.imageParams, ...beat.imageParams }, `${path}.imageParams`, problems, env);
-      if ((beat.imageParams?.provider ?? presentationStyle.imageParams?.provider) === CLOUDFLARE_IMAGE_PROVIDER &&
-          (Object.keys(presentationStyle.imageParams?.images ?? {}).length > 0 || Object.keys(beat.images ?? {}).length > 0 || (beat.imageNames?.length ?? 0) > 0)) {
+      const hasReferences =
+        Object.keys(presentationStyle.imageParams?.images ?? {}).length > 0 || Object.keys(beat.images ?? {}).length > 0 || (beat.imageNames?.length ?? 0) > 0;
+      if ((beat.imageParams?.provider ?? presentationStyle.imageParams?.provider) === CLOUDFLARE_IMAGE_PROVIDER && hasReferences) {
         problems.push(`${path}: FLUX.1 schnell does not support reference images`);
       }
     } else if (beat.imageParams?.provider && beat.imageParams.provider !== "mock" && beat.imageParams.provider !== CLOUDFLARE_IMAGE_PROVIDER) {
