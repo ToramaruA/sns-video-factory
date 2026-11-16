@@ -105,6 +105,12 @@ const replicateImageModelParams: Record<string, { maxReferenceImages?: number }>
 };
 
 export const provider2ImageAgent = {
+  cloudflare_free: {
+    agentName: "imageCloudflareFluxAgent",
+    defaultModel: "@cf/black-forest-labs/flux-1-schnell",
+    models: ["@cf/black-forest-labs/flux-1-schnell"],
+    keyName: "CLOUDFLARE_API_TOKEN",
+  },
   openai: {
     agentName: "imageOpenaiAgent",
     // gpt-image-1 shuts down on 2026-10-23; OpenAI names gpt-image-2.5-sunburst or -flare as its successor.
