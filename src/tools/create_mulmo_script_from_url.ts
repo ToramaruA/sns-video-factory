@@ -23,6 +23,21 @@ dotenv.config({ quiet: true });
 
 const vanillaAgents = agents.default ?? agents;
 
+/**
+ * A nested GraphAI graph serializes graph node input values. Passing the Zod
+ * instance as a graph input loses its parse() method. Keep the schema in the
+ * agent closure and reuse the original validator, instead of cloning it
+ * through nestedAgent GraphData.
+ */
+const validateGraphMulmoScriptAgent: AgentFunctionInfo = {
+  ...validateSchemaAgent,
+  agent: (params) =>
+    validateSchemaAgent.agent({
+      ...params,
+      namedInputs: { ...params.namedInputs, schema: mulmoScriptSchema },
+    }),
+};
+
 const showErrorMessage = (text: string) => {
   GraphAILogger.info("\x1b[31m" + text + "\x1b[0m");
 };
@@ -60,7 +75,6 @@ const graphMulmoScript: GraphData = {
       agent: "validateSchemaAgent",
       inputs: {
         text: ":llm.text.codeBlock()",
-        schema: mulmoScriptSchema,
       },
       isResult: true,
     },
@@ -241,7 +255,7 @@ export const createMulmoScriptFromUrl = async ({ urls, templateName, outDirPath,
       geminiAgent,
       groqAgent,
       browserlessAgent,
-      validateSchemaAgent,
+      validateSchemaAgent: validateGraphMulmoScriptAgent,
       fileWriteAgent,
     },
     { agentFilters, config },
@@ -301,18 +315,6 @@ export const createMulmoScriptFromText = async (
         environmentVariables: [],
       }
     : undefined;
-  const schemaAgentInfo: AgentFunctionInfo =
-    llm === "mock"
-      ? {
-          ...validateSchemaAgent,
-          agent: async (args) => {
-            const checked = await validateSchemaAgent.agent(args);
-            console.error("OFFLINE schema input:", String(args.namedInputs.text).slice(0, 240));
-            console.error("OFFLINE schema result:", JSON.stringify(checked).slice(0, 480));
-            return checked;
-          },
-        }
-      : validateSchemaAgent;
   const graph = new GraphAI(
     graphDataText,
     {
@@ -321,7 +323,7 @@ export const createMulmoScriptFromText = async (
       anthropicAgent,
       geminiAgent,
       groqAgent,
-      validateSchemaAgent: schemaAgentInfo,
+      validateSchemaAgent: validateGraphMulmoScriptAgent,
       fileWriteAgent,
       ...(mockAgentInfo ? { mediaMockAgent: mockAgentInfo } : {}),
     },
@@ -335,20 +337,11 @@ export const createMulmoScriptFromText = async (
   graph.injectValue("llmAgent", agent);
   graph.injectValue("llmModel", model);
   graph.injectValue("maxTokens", max_tokens);
-  if (llm === "mock") {
-    // Synthetic test only: observe GraphAI node state without exposing real prompts.
-    graph.registerCallback(({ nodeId, state }) => console.error("OFFLINE GraphAI node:", nodeId, state));
-  }
   if (!verbose) graph.registerCallback(cliLoadingPlugin({ nodeId: "mulmoScript", message: "Generating script..." }));
   graph.registerCallback(createUsageCallback(usageCollector));
 
   const result = await graph.run<{ path: string }>();
   if (!result?.writeJSON?.path) {
-    if (llm === "mock") {
-      // Only log GraphAI's diagnostic graph result for synthetic offline tests.
-      // Real user prompts and LLM output must never be logged here.
-      console.error("Offline GraphAI debug:", JSON.stringify(result));
-    }
     throw new Error("Could not generate a valid MulmoScript from source text");
   }
   writingMessage(result.writeJSON.path);
