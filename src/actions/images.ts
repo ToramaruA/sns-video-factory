@@ -15,6 +15,7 @@ import {
   imageGenAIAgent,
   imageOpenaiAgent,
   imageReplicateAgent,
+  imageCloudflareFluxAgent,
   movieGenAIAgent,
   movieReplicateAgent,
   movieWan22ZeroGpuAgent,
@@ -43,6 +44,7 @@ const imageAgents = {
   imageGenAIAgent,
   imageOpenaiAgent,
   imageReplicateAgent,
+  imageCloudflareFluxAgent,
 };
 const movieAgents = {
   movieGenAIAgent,
