@@ -1,0 +1,59 @@
+name: SNS Video Factory - offline text to MP4
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/sns-video-offline-e2e.yml'
+      - 'experiments/04-offline-e2e/**'
+      - 'src/tools/create_mulmo_script_from_url.ts'
+      - 'experiments/01-merge-smoke/verify_video.py'
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/sns-video-offline-e2e.yml'
+      - 'experiments/04-offline-e2e/**'
+      - 'src/tools/create_mulmo_script_from_url.ts'
+      - 'experiments/01-merge-smoke/verify_video.py'
+
+permissions:
+  contents: read
+
+jobs:
+  offline-script-to-movie:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      OPENAI_API_KEY: ''
+      ANTHROPIC_API_KEY: ''
+      ANTHROPIC_API_TOKEN: ''
+      GEMINI_API_KEY: ''
+      GROQ_API_KEY: ''
+      REPLICATE_API_TOKEN: ''
+      ELEVENLABS_API_KEY: ''
+      SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install offline rendering dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg python3
+          npm install -g yarn@1.22.22
+          yarn install --frozen-lockfile
+      - name: Build MulmoCast
+        run: yarn build
+      - name: Generate script and render via the existing MulmoCast CLI (NO AI API)
+        run: bash experiments/04-offline-e2e/run.sh
+      - name: Upload MP4 and script for inspection
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: offline-graphai-to-mp4
+          path: |
+            output/offline-sns_ja.mp4
+            experiments/04-offline-e2e/generated/offline-sns.json
+          retention-days: 3
+          if-no-files-found: warn
