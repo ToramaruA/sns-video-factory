@@ -2,7 +2,7 @@ import { type AgentFunction, type AgentFunctionInfo } from "graphai";
 import { assertCloudflareFreePlanConfigured, CLOUDFLARE_FLUX_MODEL } from "../sns-video/safety/cloudflare_free_plan.js";
 
 /** Restrict transport to Cloudflare's official, fixed Workers AI endpoint. */
-type Fetcher = (url: string, init: RequestInit) => Promise<Response>;
+type Fetcher = (url: string, init: NonNullable<Parameters<typeof fetch>[1]>) => Promise<Response>;
 
 export const generateCloudflareFluxImage = async (
   prompt: string,
@@ -36,11 +36,8 @@ export const generateCloudflareFluxImage = async (
   // Do not log the prompt, API key or untrusted upstream response.
   if (!response.ok) throw new Error(`Cloudflare Workers AI refused the image request (HTTP ${response.status}); no fallback attempted`);
   const payload: unknown = await response.json();
-  const image =
-    payload && typeof payload === "object" && "result" in payload &&
-    payload.result && typeof payload.result === "object" && "image" in payload.result
-      ? payload.result.image
-      : undefined;
+  const result = payload && typeof payload === "object" && "result" in payload ? payload.result : undefined;
+  const image = result && typeof result === "object" && "image" in result ? result.image : undefined;
   if (typeof image !== "string" || !image || image.length > 16_000_000 || !/^[a-zA-Z0-9+/]+={0,2}$/.test(image)) {
     throw new Error("Cloudflare Workers AI did not return a valid base64-encoded image");
   }
