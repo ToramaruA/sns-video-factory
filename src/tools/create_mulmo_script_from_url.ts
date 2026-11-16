@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 import path from "path";
-import { GraphAI, GraphAILogger, GraphData } from "graphai";
+import { GraphAI, GraphAILogger, GraphData, type AgentFunction, type AgentFunctionInfo } from "graphai";
 import { openAIAgent } from "@graphai/openai_agent";
 import { anthropicAgent } from "@graphai/anthropic_agent";
 import { geminiAgent } from "@graphai/gemini_agent";
@@ -22,6 +22,21 @@ import { readFileSync } from "fs";
 dotenv.config({ quiet: true });
 
 const vanillaAgents = agents.default ?? agents;
+
+/**
+ * A nested GraphAI graph serializes graph node input values. Passing the Zod
+ * instance as a graph input loses its parse() method. Keep the schema in the
+ * agent closure and reuse the original validator, instead of cloning it
+ * through nestedAgent GraphData.
+ */
+const validateGraphMulmoScriptAgent: AgentFunctionInfo = {
+  ...validateSchemaAgent,
+  agent: (params) =>
+    validateSchemaAgent.agent({
+      ...params,
+      namedInputs: { ...params.namedInputs, schema: mulmoScriptSchema },
+    }),
+};
 
 const showErrorMessage = (text: string) => {
   GraphAILogger.info("\x1b[31m" + text + "\x1b[0m");
@@ -60,7 +75,6 @@ const graphMulmoScript: GraphData = {
       agent: "validateSchemaAgent",
       inputs: {
         text: ":llm.text.codeBlock()",
-        schema: mulmoScriptSchema,
       },
       isResult: true,
     },
@@ -241,7 +255,7 @@ export const createMulmoScriptFromUrl = async ({ urls, templateName, outDirPath,
       geminiAgent,
       groqAgent,
       browserlessAgent,
-      validateSchemaAgent,
+      validateSchemaAgent: validateGraphMulmoScriptAgent,
       fileWriteAgent,
     },
     { agentFilters, config },
@@ -265,18 +279,42 @@ export const createMulmoScriptFromUrl = async ({ urls, templateName, outDirPath,
   writingMessage(result?.writeJSON?.path ?? "");
 };
 
-export const createMulmoScriptFromFile = async (
-  fileName: string,
-  { templateName, outDirPath, filename, cacheDirPath, llm, llm_model, verbose, usageCollector }: ScriptingParams,
-) => {
+/**
+ * Reuse the same MulmoScript GraphAI graph as the existing file-input CLI,
+ * without requiring a temporary source file. A Web adapter can call this
+ * with an explicitly selected LLM provider after verifying its free tier.
+ *
+ * The optional agent is ONLY for offline tests: it can replace the "mock"
+ * provider, never a real provider. No API key is needed in that mode.
+ */
+export const createMulmoScriptFromText = async (
+  text: string,
+  params: ScriptingParams & { llm: NonNullable<ScriptingParams["llm"]> },
+  offlineMockLLMAgent?: AgentFunction,
+): Promise<string> => {
+  if (!text.trim()) throw new Error("Non-empty source text is required");
+  if (params.llm === "mock" && !offlineMockLLMAgent) throw new Error("Offline mock LLM must be supplied for llm=mock");
+  if (params.llm !== "mock" && offlineMockLLMAgent) throw new Error("Offline mock cannot override a real LLM provider");
+
+  const { templateName, outDirPath, filename, cacheDirPath, llm, llm_model, verbose, usageCollector } = params;
   mkdir(outDirPath);
   mkdir(cacheDirPath);
-  const filePath = path.resolve(process.cwd(), fileName);
 
-  const text = readFileSync(filePath, "utf-8");
   const { agent, model, max_tokens } = llmPair(llm, llm_model);
-
-  const config = settings2GraphAIConfig(undefined, process.env);
+  const mockAgentInfo: AgentFunctionInfo | undefined = offlineMockLLMAgent
+    ? {
+        name: "mediaMockAgent",
+        agent: offlineMockLLMAgent,
+        mock: offlineMockLLMAgent,
+        samples: [],
+        description: "Injected offline GraphAI script-generation fixture",
+        category: ["llm"],
+        author: "SNS Video Factory",
+        repository: "https://github.com/ToramaruA/sns-video-factory",
+        license: "MIT",
+        environmentVariables: [],
+      }
+    : undefined;
   const graph = new GraphAI(
     graphDataText,
     {
@@ -285,10 +323,11 @@ export const createMulmoScriptFromFile = async (
       anthropicAgent,
       geminiAgent,
       groqAgent,
-      validateSchemaAgent,
+      validateSchemaAgent: validateGraphMulmoScriptAgent,
       fileWriteAgent,
+      ...(mockAgentInfo ? { mediaMockAgent: mockAgentInfo } : {}),
     },
-    { config },
+    { config: llm === "mock" ? {} : settings2GraphAIConfig(undefined, process.env) },
   );
 
   graph.injectValue("sourceText", { text });
@@ -298,14 +337,20 @@ export const createMulmoScriptFromFile = async (
   graph.injectValue("llmAgent", agent);
   graph.injectValue("llmModel", model);
   graph.injectValue("maxTokens", max_tokens);
-  if (!verbose) {
-    graph.registerCallback(cliLoadingPlugin({ nodeId: "mulmoScript", message: "Generating script..." }));
-  }
+  if (!verbose) graph.registerCallback(cliLoadingPlugin({ nodeId: "mulmoScript", message: "Generating script..." }));
   graph.registerCallback(createUsageCallback(usageCollector));
+
   const result = await graph.run<{ path: string }>();
   if (!result?.writeJSON?.path) {
-    showErrorMessage("Script generation failed. Please try again.");
-    return;
+    throw new Error("Could not generate a valid MulmoScript from source text");
   }
-  writingMessage(result?.writeJSON?.path ?? "");
+  writingMessage(result.writeJSON.path);
+  return result.writeJSON.path;
+};
+
+export const createMulmoScriptFromFile = async (fileName: string, params: ScriptingParams) => {
+  const filePath = path.resolve(process.cwd(), fileName);
+  const text = readFileSync(filePath, "utf-8");
+  // Preserve the existing CLI default; new Web/offline paths must pass llm explicitly.
+  return createMulmoScriptFromText(text, { ...params, llm: params.llm ?? "openai" });
 };
