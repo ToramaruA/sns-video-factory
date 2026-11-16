@@ -40,7 +40,9 @@ test("Free Plan confirmation and credentials are required before network access"
     await assert.rejects(
       generateCloudflareFluxImage("concert", {
         env,
-        fetcher: async () => { throw new Error("NETWORK MUST NOT BE CALLED"); },
+        fetcher: async () => {
+          throw new Error("NETWORK MUST NOT BE CALLED");
+        },
       }),
       /Free|CLOUDFLARE_ACCOUNT_ID|CLOUDFLARE_API_TOKEN/,
     );
@@ -48,17 +50,15 @@ test("Free Plan confirmation and credentials are required before network access"
 });
 
 test("pin the model, ban reference images and oversized prompts before any API request", async () => {
-  for (const item of [
-    { model: "@cf/black-forest-labs/flux-2-dev" },
-    { referenceImages: ["./logo.png"] },
-    { prompt: "x".repeat(2049) },
-  ]) {
+  for (const item of [{ model: "@cf/black-forest-labs/flux-2-dev" }, { referenceImages: ["./logo.png"] }, { prompt: "x".repeat(2049) }]) {
     await assert.rejects(
       generateCloudflareFluxImage(item.prompt ?? "concert", {
         model: item.model,
         referenceImages: item.referenceImages,
         env: freeEnv,
-        fetcher: async () => { throw new Error("NETWORK MUST NOT BE CALLED"); },
+        fetcher: async () => {
+          throw new Error("NETWORK MUST NOT BE CALLED");
+        },
       }),
       /pinned|reference images|2048/,
     );
