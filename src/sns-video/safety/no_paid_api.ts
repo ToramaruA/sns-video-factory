@@ -52,10 +52,7 @@ const localImageOrMovie = (media: MediaRef, path: string, problems: string[]) =>
  * We deliberately require suppressSpeech even when narration seems absent:
  * MulmoCast's speaker defaults to the paid OpenAI TTS provider.
  */
-export const assertSnsNoPaidApiMovie = (
-  script: MulmoScript,
-  options: { targetLang?: string; presentationStyle?: MulmoPresentationStyle } = {},
-): void => {
+export const assertSnsNoPaidApiMovie = (script: MulmoScript, options: { targetLang?: string; presentationStyle?: MulmoPresentationStyle } = {}): void => {
   const problems: string[] = [];
   const presentationStyle = options.presentationStyle ?? script;
   const language = script.lang;
@@ -100,11 +97,7 @@ export const assertSnsNoPaidApiMovie = (
     if (beat.enableLipSync || beat.lipSyncParams || beat.avatarParams) problems.push(`${path}: lip sync / avatar generation is not approved`);
     if (beat.movieParams) {
       // Reject per-beat provider changes; the default has been checked above.
-      allowedMovieSettings(
-        { ...presentationStyle.movieParams, ...beat.movieParams },
-        `${path}.movieParams`,
-        problems,
-      );
+      allowedMovieSettings({ ...presentationStyle.movieParams, ...beat.movieParams }, `${path}.movieParams`, problems);
     }
     if (beat.audio && beat.audio.type !== "audio") {
       problems.push(`${path}.audio: MIDI/JingleScript generation has not been approved`);
