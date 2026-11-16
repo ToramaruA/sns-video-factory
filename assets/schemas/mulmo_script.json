@@ -285,6 +285,7 @@
         "provider": {
           "type": "string",
           "enum": [
+            "cloudflare_free",
             "openai",
             "google",
             "replicate",
@@ -13905,6 +13906,7 @@
               "provider": {
                 "type": "string",
                 "enum": [
+                  "cloudflare_free",
                   "openai",
                   "google",
                   "replicate",

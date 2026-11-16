@@ -6,6 +6,7 @@
  * account billing tier, license and quota verification before being added.
  */
 import type { MulmoScript, MulmoPresentationStyle } from "../../types/index.js";
+import { assertCloudflareFreePlanConfigured, CLOUDFLARE_FLUX_MODEL, CLOUDFLARE_IMAGE_PROVIDER } from "./cloudflare_free_plan.js";
 
 export class SnsFreePreflightError extends Error {
   constructor(public readonly reasons: string[]) {
@@ -19,10 +20,17 @@ type MediaRef = { type: string; source?: Source };
 type ImageSettings = { provider?: string; model?: string };
 type MovieSettings = { provider?: string; model?: string; generateAudio?: boolean };
 
-const allowedMockImage = (settings: ImageSettings, path: string, problems: string[]) => {
-  if (settings.provider !== "mock" || (settings.model !== undefined && settings.model !== "mock-model")) {
-    problems.push(`${path}: only the bundled mock image Agent is approved; no external image API is allowed`);
+const allowedSafeImage = (settings: ImageSettings, path: string, problems: string[], env: Record<string, string | undefined>) => {
+  if (settings.provider === "mock" && (settings.model === undefined || settings.model === "mock-model")) return;
+  if (settings.provider === CLOUDFLARE_IMAGE_PROVIDER && (settings.model === undefined || settings.model === CLOUDFLARE_FLUX_MODEL)) {
+    try {
+      assertCloudflareFreePlanConfigured(env);
+    } catch {
+      problems.push(`${path}: Cloudflare Workers Free account confirmation, valid account ID and API token are required`);
+    }
+    return;
   }
+  problems.push(`${path}: only the bundled mock image or explicitly confirmed Workers Free FLUX.1 schnell is permitted`);
 };
 
 const allowedMovieSettings = (settings: MovieSettings | undefined, path: string, problems: string[]) => {
@@ -52,8 +60,12 @@ const localImageOrMovie = (media: MediaRef, path: string, problems: string[]) =>
  * We deliberately require suppressSpeech even when narration seems absent:
  * MulmoCast's speaker defaults to the paid OpenAI TTS provider.
  */
-export const assertSnsNoPaidApiMovie = (script: MulmoScript, options: { targetLang?: string; presentationStyle?: MulmoPresentationStyle } = {}): void => {
+export const assertSnsNoPaidApiMovie = (
+  script: MulmoScript,
+  options: { targetLang?: string; presentationStyle?: MulmoPresentationStyle; env?: Record<string, string | undefined> } = {},
+): void => {
   const problems: string[] = [];
+  const env = options.env ?? process.env;
   const presentationStyle = options.presentationStyle ?? script;
   const language = script.lang;
 
@@ -71,7 +83,7 @@ export const assertSnsNoPaidApiMovie = (script: MulmoScript, options: { targetLa
     ["script", script],
     ["presentationStyle", presentationStyle],
   ] as const) {
-    allowedMockImage(style.imageParams ?? {}, `${path}.imageParams`, problems);
+    allowedSafeImage(style.imageParams ?? {}, `${path}.imageParams`, problems, env);
     allowedMovieSettings(style.movieParams, `${path}.movieParams`, problems);
     if (style.htmlImageParams) problems.push(`${path}.htmlImageParams: HTML generation can call a paid LLM`);
     if (style.avatarParams || style.lipSyncParams || style.remotionParams) {
@@ -117,8 +129,13 @@ export const assertSnsNoPaidApiMovie = (script: MulmoScript, options: { targetLa
     }
     if (beat.image) localImageOrMovie(beat.image, `${path}.image`, problems);
     if (beat.imagePrompt) {
-      allowedMockImage({ ...presentationStyle.imageParams, ...beat.imageParams }, `${path}.imageParams`, problems);
-    } else if (beat.imageParams?.provider && beat.imageParams.provider !== "mock") {
+      allowedSafeImage({ ...presentationStyle.imageParams, ...beat.imageParams }, `${path}.imageParams`, problems, env);
+      const hasReferences =
+        Object.keys(presentationStyle.imageParams?.images ?? {}).length > 0 || Object.keys(beat.images ?? {}).length > 0 || (beat.imageNames?.length ?? 0) > 0;
+      if ((beat.imageParams?.provider ?? presentationStyle.imageParams?.provider) === CLOUDFLARE_IMAGE_PROVIDER && hasReferences) {
+        problems.push(`${path}: FLUX.1 schnell does not support reference images`);
+      }
+    } else if (beat.imageParams?.provider && beat.imageParams.provider !== "mock" && beat.imageParams.provider !== CLOUDFLARE_IMAGE_PROVIDER) {
       problems.push(`${path}.imageParams: paid image provider override is not approved`);
     }
     if (!beat.image && !beat.imagePrompt) {

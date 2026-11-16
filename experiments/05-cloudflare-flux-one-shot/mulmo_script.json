@@ -1,0 +1,35 @@
+{
+  "$mulmocast": {
+    "version": "1.1"
+  },
+  "title": "Cloudflare FLUX free single image demo",
+  "lang": "ja",
+  "canvasSize": {
+    "width": 720,
+    "height": 1280
+  },
+  "imageParams": {
+    "provider": "cloudflare_free",
+    "model": "@cf/black-forest-labs/flux-1-schnell"
+  },
+  "movieParams": {
+    "provider": "mock",
+    "model": "mock-model"
+  },
+  "audioParams": {
+    "suppressSpeech": true,
+    "introPadding": 0,
+    "padding": 0,
+    "closingPadding": 0,
+    "outroPadding": 0,
+    "bgmVolume": 0
+  },
+  "beats": [
+    {
+      "id": "concert_stage",
+      "text": "",
+      "duration": 2,
+      "imagePrompt": "An elegant intimate chamber music concert stage, grand piano and violin, deep blue theatrical lighting, warm gold highlights, cinematic, premium event advertisement, vertical framing, no text, no letters, no watermarks"
+    }
+  ]
+}

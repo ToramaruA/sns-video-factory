@@ -131,6 +131,32 @@ test("all paid and unknown generator paths fail closed before entering MulmoCast
   }
 });
 
+test("FLUX image generation is allowed only for an explicitly confirmed Workers Free account", () => {
+  const script = makeScript({
+    imageParams: { provider: "cloudflare_free", model: "@cf/black-forest-labs/flux-1-schnell" },
+  });
+  const env = {
+    SNS_VIDEO_CLOUDFLARE_FREE_PLAN_CONFIRMED: "1",
+    CLOUDFLARE_ACCOUNT_ID: "0123456789abcdef0123456789abcdef",
+    CLOUDFLARE_API_TOKEN: "fake-test-token",
+  };
+  assert.throws(() => assertSnsNoPaidApiMovie(script, { env: {} }), /Workers Free/);
+  assert.doesNotThrow(() => assertSnsNoPaidApiMovie(script, { env }));
+  assert.throws(
+    () => assertSnsNoPaidApiMovie(script, { env, presentationStyle: { ...script, imageParams: { provider: "openai" } } }),
+    /presentationStyle.imageParams/,
+  );
+  const references = makeScript({
+    imageParams: {
+      provider: "cloudflare_free",
+      images: { logo: { type: "image", source: { kind: "path", path: "./logo.png" } } },
+    },
+  });
+  assert.throws(() => assertSnsNoPaidApiMovie(references, { env }), /reference images/);
+  const wrongModel = makeScript({ imageParams: { provider: "cloudflare_free", model: "@cf/black-forest-labs/flux-2-dev" } });
+  assert.throws(() => assertSnsNoPaidApiMovie(wrongModel, { env }), /mock image or explicitly confirmed/);
+});
+
 test("a requested translation or paid presentation-style override cannot bypass the guard", () => {
   const script = makeScript();
   assert.throws(() => assertSnsNoPaidApiMovie(script, { targetLang: "en" }), /translation/);
