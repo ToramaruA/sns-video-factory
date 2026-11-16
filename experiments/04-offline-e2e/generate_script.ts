@@ -69,7 +69,6 @@ const scriptPath = await createMulmoScriptFromText(
   },
   async ({ namedInputs }) => {
     calls += 1;
-    console.error("OFFLINE MOCK LLM", calls, "keys=", Object.keys(namedInputs), "promptTail=", String(namedInputs.prompt).slice(-220));
     assert.match(String(namedInputs.prompt), /クリスマス|室内楽|演奏会/);
     return { text: "```json\n" + JSON.stringify(cannedScript) + "\n```" };
   },
