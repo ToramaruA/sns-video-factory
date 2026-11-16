@@ -53,6 +53,9 @@ const cannedScript = {
   ],
 };
 
+const fixtureResult = mulmoScriptSchema.safeParse(cannedScript);
+assert.equal(fixtureResult.success, true, fixtureResult.success ? "" : JSON.stringify(fixtureResult.error.issues));
+
 let calls = 0;
 const scriptPath = await createMulmoScriptFromText(
   brief,
