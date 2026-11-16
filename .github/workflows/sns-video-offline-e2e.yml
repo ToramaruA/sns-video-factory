@@ -7,6 +7,11 @@ on:
       - '.github/workflows/sns-video-offline-e2e.yml'
       - 'experiments/04-offline-e2e/**'
       - 'src/sns-video/safety/**'
+      - 'src/agents/image_cloudflare_flux_agent.ts'
+      - 'src/agents/index.ts'
+      - 'src/actions/images.ts'
+      - 'src/types/provider2agent.ts'
+      - 'test/sns_video/test_cloudflare_flux_free.ts'
       - 'src/cli/commands/movie/**'
       - 'test/sns_video/test_no_paid_api.ts'
       - 'src/tools/create_mulmo_script_from_url.ts'
@@ -17,6 +22,11 @@ on:
       - '.github/workflows/sns-video-offline-e2e.yml'
       - 'experiments/04-offline-e2e/**'
       - 'src/sns-video/safety/**'
+      - 'src/agents/image_cloudflare_flux_agent.ts'
+      - 'src/agents/index.ts'
+      - 'src/actions/images.ts'
+      - 'src/types/provider2agent.ts'
+      - 'test/sns_video/test_cloudflare_flux_free.ts'
       - 'src/cli/commands/movie/**'
       - 'test/sns_video/test_no_paid_api.ts'
       - 'src/tools/create_mulmo_script_from_url.ts'
@@ -38,6 +48,9 @@ jobs:
       REPLICATE_API_TOKEN: ''
       ELEVENLABS_API_KEY: ''
       SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT: '0'
+      SNS_VIDEO_CLOUDFLARE_FREE_PLAN_CONFIRMED: '0'
+      CLOUDFLARE_ACCOUNT_ID: ''
+      CLOUDFLARE_API_TOKEN: ''
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -52,7 +65,7 @@ jobs:
       - name: Build MulmoCast
         run: yarn build
       - name: Test SNS fail-closed provider policy (offline, no secrets)
-        run: ./node_modules/.bin/tsx --test test/sns_video/test_no_paid_api.ts
+        run: ./node_modules/.bin/tsx --test test/sns_video/test_no_paid_api.ts test/sns_video/test_cloudflare_flux_free.ts
       - name: Generate script and render via the existing MulmoCast CLI (NO AI API)
         run: bash experiments/04-offline-e2e/run.sh
       - name: Upload MP4 and script for inspection
