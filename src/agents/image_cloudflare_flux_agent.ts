@@ -52,14 +52,31 @@ export const generateCloudflareFluxImage = async (
   return buffer;
 };
 
+// MulmoCast's imageGenerator retries failed Agent nodes. A free-tier request
+// must not be silently re-submitted after a timeout or ambiguous HTTP error.
+const submitted = new Map<string, Promise<Buffer>>();
+
 export const imageCloudflareFluxAgent: AgentFunction = async ({ namedInputs, params }) => {
   if (namedInputs.media !== "image") throw new Error("Cloudflare FLUX agent supports images only");
-  const buffer = await generateCloudflareFluxImage(String(namedInputs.prompt ?? ""), {
-    model: params.model as string | undefined,
-    referenceImages: namedInputs.referenceImages as string[] | undefined,
-    env: process.env,
-  });
-  return { buffer };
+  const env = process.env;
+  const { accountId } = assertCloudflareFreePlanConfigured(env);
+  const prompt = String(namedInputs.prompt ?? "");
+  const model = params.model as string | undefined;
+  const referenceImages = namedInputs.referenceImages as string[] | undefined;
+  // Validate locally even when this exact prompt was seen earlier.
+  if (model !== undefined && model !== CLOUDFLARE_FLUX_MODEL) throw new Error("Unapproved Cloudflare image model");
+  if (referenceImages?.length) throw new Error("FLUX.1 schnell does not support reference images");
+  if (prompt.trim().length < 1 || prompt.trim().length > 2048) throw new Error("FLUX prompt must contain 1–2048 characters");
+
+  const key = JSON.stringify([accountId, CLOUDFLARE_FLUX_MODEL, prompt.trim()]);
+  let promise = submitted.get(key);
+  if (!promise) {
+    promise = generateCloudflareFluxImage(prompt, { model, referenceImages, env });
+    // Keep both successes and failures. Even a failed request may have reached
+    // Cloudflare: never auto-resubmit within the same process.
+    submitted.set(key, promise);
+  }
+  return { buffer: await promise };
 };
 
 const imageCloudflareFluxAgentInfo: AgentFunctionInfo = {
