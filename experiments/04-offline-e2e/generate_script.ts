@@ -39,16 +39,16 @@ const cannedScript = {
       image: { type: "image", source: { kind: "path", path: "./assets/blue.png" } },
     },
     {
-      id: "red_stage",
-      text: "",
-      duration: 2,
-      image: { type: "image", source: { kind: "path", path: "./assets/red.png" } },
-    },
-    {
       id: "mock_image_generation",
       text: "",
       duration: 2,
       imagePrompt: "静かな舞台と楽器。SNS向け縦型構図。今回は既存のオフラインmock画像Agentを呼ぶ。",
+    },
+    {
+      id: "red_stage",
+      text: "",
+      duration: 2,
+      image: { type: "image", source: { kind: "path", path: "./assets/red.png" } },
     },
   ],
 };
