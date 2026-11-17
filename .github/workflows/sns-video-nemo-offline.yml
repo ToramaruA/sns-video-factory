@@ -1,0 +1,27 @@
+name: SNS Video - offline Japanese voice integration tests
+
+on:
+  pull_request:
+    paths:
+      - 'experiments/07-groq-flux-three-cut/add_nemo_narration.py'
+      - 'test/sns_video/test_nemo_narration.py'
+      - '.github/workflows/sns-video-nemo-offline.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'experiments/07-groq-flux-three-cut/add_nemo_narration.py'
+      - 'test/sns_video/test_nemo_narration.py'
+      - '.github/workflows/sns-video-nemo-offline.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  no-network-nemo-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - name: Unit test without local TTS engine or AI service
+        run: python3 -m unittest discover -s test/sns_video -p 'test_nemo_narration.py' -v

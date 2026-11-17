@@ -72,6 +72,16 @@ test("variable number and durations of cuts carry through to original MulmoCast 
   }
 });
 
+test("optional planned narration is not automatically sent to paid TTS by the still-only movie path", () => {
+  const plan = getPlan();
+  plan.beats[0].text = "ようこそ、音楽の夜へ。";
+  const preview = makeSnsStillPreview(plan, freeEnv);
+  assert.equal(preview.beats[0].text, "");
+  assert.equal(plan.beats[0].text, "ようこそ、音楽の夜へ。");
+  assert.equal(preview.audioParams.suppressSpeech, true);
+  assert.equal(preview.beats[0].audio, undefined);
+});
+
 test("Free account confirmation and credentials are required before creating a renderable preview", () => {
   const plan = getPlan();
   assert.throws(() => makeSnsStillPreview(plan, {}), /Workers Free/);
