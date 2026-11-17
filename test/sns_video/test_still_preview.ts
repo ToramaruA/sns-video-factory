@@ -29,7 +29,10 @@ test("real Groq-format plan can produce a free-only, three-image, six-second Mul
   const originalJson = JSON.stringify(original);
   const preview = makeSnsStillPreview(original, freeEnv);
   assert.equal(preview.beats.length, 3);
-  assert.deepEqual(preview.beats.map((beat) => beat.duration), [2, 2, 2]);
+  assert.deepEqual(
+    preview.beats.map((beat) => beat.duration),
+    [2, 2, 2],
+  );
   assert.deepEqual(
     preview.beats.map((beat) => beat.imagePrompt),
     original.beats.map((beat) => beat.imagePrompt),
