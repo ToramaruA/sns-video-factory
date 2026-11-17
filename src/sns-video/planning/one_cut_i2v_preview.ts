@@ -41,7 +41,7 @@ export const makeSnsOneCutWanProbe = (plan: MulmoScript, selected: SnsPreviewBea
     lang: "ja",
     canvasSize: { width: 720, height: 1280 },
     imageParams: { provider: "mock", model: "mock-model" },
-    movieParams: { provider: "free_i2v", model: "auto-free", concurrency: 1, generateAudio: false },
+    movieParams: { provider: "free_i2v", model: "auto-free", concurrency: 1, generateAudio: false, fillOption: { style: "aspectFill" } },
     audioParams: { suppressSpeech: true, introPadding: 0, padding: 0, closingPadding: 0, outroPadding: 0, bgmVolume: 0 },
     beats: [
       {
@@ -68,7 +68,7 @@ export const makeSnsMixedI2vPreview = (plan: MulmoScript, selected: SnsPreviewBe
     lang: "ja",
     canvasSize: { width: 720, height: 1280 },
     imageParams: { provider: "mock", model: "mock-model" },
-    movieParams: { provider: "mock", model: "mock-model" },
+    movieParams: { provider: "mock", model: "mock-model", fillOption: { style: "aspectFill" } },
     audioParams: { suppressSpeech: true, introPadding: 0, padding: 0, closingPadding: 0, outroPadding: 0, bgmVolume: 0 },
     beats: plan.beats.map((beat) => ({
       id: beat.id,
