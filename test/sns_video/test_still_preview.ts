@@ -62,7 +62,10 @@ test("variable number and durations of cuts carry through to original MulmoCast 
     });
     const result = makeSnsStillPreview(plan, freeEnv);
     assert.equal(result.beats.length, durations.length);
-    assert.deepEqual(result.beats.map((beat) => beat.duration), durations);
+    assert.deepEqual(
+      result.beats.map((beat) => beat.duration),
+      durations,
+    );
     assert.ok(result.beats.every((beat) => beat.imagePrompt && !beat.moviePrompt && !beat.audio));
     assert.equal(result.movieParams.provider, "mock");
     assert.equal(result.audioParams.suppressSpeech, true);
