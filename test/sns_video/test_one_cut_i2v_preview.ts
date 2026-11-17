@@ -29,6 +29,7 @@ test("one selected shot reuses existing free_i2v MulmoScript; never regenerates 
   assert.equal(script.beats[0].moviePrompt, plan.beats[1].moviePrompt);
   assert.equal(script.movieParams.provider, "free_i2v");
   assert.equal(script.movieParams.model, "auto-free");
+  assert.deepEqual(script.movieParams.fillOption, { style: "aspectFill" });
   assert.equal(script.imageParams.provider, "mock");
   assert.equal(script.audioParams.suppressSpeech, true);
   assert.equal(script.beats[0].imagePrompt, undefined);
@@ -45,6 +46,7 @@ test("the two unselected stills plus one local Wan clip can pass the normal no-p
     [2, 2, 2],
   );
   assert.equal(script.movieParams.provider, "mock");
+  assert.deepEqual(script.movieParams.fillOption, { style: "aspectFill" });
   assert.equal(script.imageParams.provider, "mock");
   assert.equal(script.audioParams.suppressSpeech, true);
   assert.deepEqual(script.beats[1].image, { type: "movie", source: { kind: "path", path: "./assets/main.mov" } });
