@@ -18,5 +18,5 @@ const directory = join(here, "generated");
 mkdirSync(directory, { recursive: true });
 const output = join(directory, "three-cut-preview.json");
 writeFileSync(output, JSON.stringify(preview, null, 2) + "\n");
-process.stdout.write(`PASS: validated Groq plan -> safe 3-image MulmoScript preview; output=${output}\n`);
+process.stdout.write(`PASS: validated Groq plan -> safe variable-cut MulmoScript preview; output=${output}\n`);
 process.stdout.write("NOTICE: still-image MP4 only; original moviePrompt is preserved for later I2V.\n");
