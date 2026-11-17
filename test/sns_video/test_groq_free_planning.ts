@@ -40,7 +40,7 @@ test("existing GraphAI text-to-script works with the new 3-cut template, without
       { llm: "mock", templateName: "sns_video_short", urls: [], outDirPath, cacheDirPath: join(outDirPath, "cache"), filename: "plan-test" },
       async () => {
         calls += 1;
-        return { text: ```json\n${JSON.stringify(fixture)}\n``` };
+        return { text: "```json\\n" + JSON.stringify(fixture) + "\\n```" };
       },
     );
     const script = validateSnsShortPlan(mulmoScriptSchema.parse(JSON.parse(readFileSync(output, "utf8"))));
