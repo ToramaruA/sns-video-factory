@@ -19,7 +19,7 @@ def wav_bytes(seconds=0.75):
         audio.setnchannels(1)
         audio.setsampwidth(2)
         audio.setframerate(24000)
-        audio.writeframes(b"\\x01\\x00" * int(24000 * seconds))
+        audio.writeframes(b"\x01\x00" * int(24000 * seconds))
     return output.getvalue()
 
 
