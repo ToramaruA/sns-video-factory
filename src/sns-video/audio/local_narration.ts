@@ -63,8 +63,8 @@ export const makeSnsLocalNarrationPreview = (
       text: narrationLines[index].trim(),
       duration: 2,
       image: {
-        type: beat.image?.type,
-        source: { kind: "path", path: beat.image?.source.kind === "path" ? beat.image.source.path : "" },
+        type: index === 1 ? "movie" : "image",
+        source: { kind: "path", path: `./assets/${beat.id}.${index === 1 ? "mov" : "png"}` },
       },
       audio: { type: "audio", source: { kind: "path", path: `./assets/${beat.id}.${audioFormat}` } },
     })),
