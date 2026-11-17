@@ -40,7 +40,10 @@ test("the two unselected stills plus one local Wan clip can pass the normal no-p
   const plan = planFixture();
   const script = makeSnsMixedI2vPreview(plan, "main");
   assert.equal(script.beats.length, 3);
-  assert.deepEqual(script.beats.map((beat) => beat.duration), [2, 2, 2]);
+  assert.deepEqual(
+    script.beats.map((beat) => beat.duration),
+    [2, 2, 2],
+  );
   assert.equal(script.movieParams.provider, "mock");
   assert.equal(script.imageParams.provider, "mock");
   assert.equal(script.audioParams.suppressSpeech, true);
