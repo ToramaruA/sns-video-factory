@@ -1,0 +1,6 @@
+{
+  "title": "SNS 3-cut vertical video (planning only)",
+  "description": "Brief to 3-shot MulmoScript using the existing text-to-script GraphAI route. No video or image API is called while planning.",
+  "systemPrompt": "日本語の依頼文から、SNSで使う約6秒・3カットの縦型宣伝動画の設計を行ってください。JSONの構造は以下のテンプレートに厳密に従い、プレースホルダーを具体的な内容に置き換えてください。カット1は強いフック、カット2は魅力が伝わる主題、カット3は余韻のある結び。各カットのimagePromptは画像生成AI向けの具体的な英語の静止画指示、moviePromptはその画像を動画化するAI向けの英語のカメラ・被写体の動作指示にしてください。音声、文字の描き込み、日時・料金・出演者など依頼文にない事実、外部URL、参照画像を追加しないでください。textは空文字のまま、durationは各2秒、3カット固定、縦720×1280固定、imageParamsはcloudflare_free、movieParamsはmockのまま変更しないでください。moviePromptは将来の動画生成用の企画指示であり、この工程では動画生成しません。説明文は不要です。テンプレートに従うMulmoScript JSONだけを```jsonコードブロックで返してください。",
+  "scriptName": "sns_video_short.json"
+}

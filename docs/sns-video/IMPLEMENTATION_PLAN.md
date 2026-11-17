@@ -46,6 +46,10 @@
 
 **最初の安全PR（PR #12）:** 本番の無料生成元がまだ承認されていないため、まず`movie --sns-free-only`を追加。ローカル素材と既存mockのみ許可し、意図しない有料画像/動画/TTS/翻訳などの経路を事前拒否する。既存のオフライン連続動画テストを同モードで通す。GroqのFree Planを明示確認した場合にのみ、既存GraphAIへ`openai/gpt-oss-20b`を渡す企画生成入口も追加（実APIはキーがなく未検証）。[無料モードの詳細](./FREE_TIER_SAFETY.md)
 
+**画像AI実績（PR #13）:** Cloudflare Workers FreeのFLUX.1 Schnellを既存画像Agentに接続。[実際のCloudflare APIを使用した手動試験](https://github.com/ToramaruA/sns-video-factory/actions/runs/44014541975)で**静止画1枚→2秒・720×1280のMP4**に成功（2026-11-17）。ここでは画像を動かすI2Vは実行していない。
+
+**次の企画AI段階（PR #14）:** Groq Free Planの`gpt-oss-20b`を使った既存GraphAIの3カット・縦型MulmoScript企画生成を、**手動で明示実行**できるようにする。テストはモックで通し、実APIテストはGroqのFree契約とキーが登録されてから。[手動企画生成の説明](./GROQ_FREE_PLANNING.md)。**企画を作るだけ**で、この段階で画像やI2Vは実行しない。
+
 
 - [ ] MulmoCast既存GraphAI/LLMのGemini・Groq等から、**公式無料Tierとして利用できるモデルのみ**選ぶ。無料枠・商用・プライバシー条件を検証する
 - [ ] 企画文・外部AIからのコピペを既存のMulmoScript作成処理へ渡し、修正しても元の台本の機能を失わないことを確認する
