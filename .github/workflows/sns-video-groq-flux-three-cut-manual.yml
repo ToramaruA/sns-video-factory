@@ -1,4 +1,4 @@
-name: Free MulmoCast - 文章から縦型動画（無料枠・静止画）
+name: Free MulmoCast - 文章から縦型動画（無料枠・音声任意）
 
 on:
   workflow_dispatch:
@@ -7,6 +7,16 @@ on:
         description: 'Describe the SNS video you want (Japanese, max 3500 chars). AI chooses 1-12 shots and timing.'
         type: string
         required: true
+      enable_free_japanese_voice:
+        description: 'Use locally run VOICEVOX Nemo Japanese narration (no paid TTS API; requires credit).'
+        type: boolean
+        required: true
+        default: false
+      confirm_nemo_credit:
+        description: 'If enabling Nemo, I will credit VOICEVOX Nemo in the published video or post.'
+        type: boolean
+        required: true
+        default: false
       confirm_groq_free_plan:
         description: 'I verified this Groq organization uses the FREE Plan (not Developer).'
         type: boolean
@@ -71,6 +81,23 @@ jobs:
       - name: Preserve plan and make a safe still-only render script
         run: |
           ./node_modules/.bin/tsx experiments/07-groq-flux-three-cut/prepare_preview.ts
+      - name: Require VOICEVOX Nemo attribution agreement before engine download
+        if: inputs.enable_free_japanese_voice == true
+        run: |
+          test "${{ inputs.confirm_nemo_credit }}" = 'true' || { echo 'VOICEVOX Nemo attribution agreement is required' >&2; exit 1; }
+      - name: Start VOICEVOX Nemo locally (optional CPU TTS, no cloud account)
+        if: inputs.enable_free_japanese_voice == true
+        run: |
+          docker run -d --rm --name sns-voicevox-nemo -p 127.0.0.1:50021:50021 voicevox/voicevox_nemo_engine:cpu-ubuntu20.04-latest
+          ready=0
+          for i in $(seq 1 60); do
+            if curl --max-time 3 -fsS http://127.0.0.1:50021/speakers -o /dev/null; then ready=1; break; fi
+            sleep 3
+          done
+          test "$ready" = 1 || { docker logs sns-voicevox-nemo; echo 'VOICEVOX Nemo did not start' >&2; exit 1; }
+      - name: Render local WAV narrations and add existing MulmoCast beat.audio references
+        if: inputs.enable_free_japanese_voice == true
+        run: python3 experiments/07-groq-flux-three-cut/add_nemo_narration.py
       - name: Original MulmoCast generates all stills and renders portrait MP4
         run: |
           node lib/cli/bin.js movie experiments/07-groq-flux-three-cut/generated/three-cut-preview.json --sns-free-only
@@ -88,6 +115,10 @@ jobs:
             experiments/06-groq-planning/generated/sns-video-plan.json
             experiments/07-groq-flux-three-cut/generated/three-cut-preview.json
             output/three-cut-preview_ja.mp4
+            experiments/07-groq-flux-three-cut/generated/VOICE_ATTRIBUTION.txt
             output/images/three-cut-preview/**
           if-no-files-found: error
           retention-days: 3
+      - name: Stop local Nemo engine
+        if: always() && inputs.enable_free_japanese_voice == true
+        run: docker rm -f sns-voicevox-nemo || true
