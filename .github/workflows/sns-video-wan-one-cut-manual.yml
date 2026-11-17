@@ -59,7 +59,6 @@ jobs:
       HUGGING_FACE_HUB_TOKEN: ''
       HF_HUB_DISABLE_IMPLICIT_TOKEN: '1'
       SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT: '0'
-      SNS_VIDEO_FREE_VIDEO_LEDGER_PATH: ${{ runner.temp }}/sns-video-wan-once-ledger.json
       SNS_VIDEO_PYTHON_BINARY: ${{ github.workspace }}/.venv/bin/python
     steps:
       - uses: actions/checkout@v4
@@ -91,6 +90,7 @@ jobs:
       - name: Run exactly one anonymous Wan I2V request through EXISTING MulmoCast agent
         env:
           SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT: '1'
+          SNS_VIDEO_FREE_VIDEO_LEDGER_PATH: ${{ runner.temp }}/sns-video-wan-once-ledger.json
         run: |
           echo 'ONE EXPERIMENT ONLY: anonymous Hugging Face Space; never a production or commercial usage approval.'
           node lib/cli/bin.js movie experiments/08-one-cut-wan/generated/i2v-one-cut.json
