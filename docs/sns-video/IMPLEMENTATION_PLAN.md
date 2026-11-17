@@ -1,6 +1,6 @@
 # SNS Video Factory — MVP実装計画（正本）
 
-**更新:** 2026-11-16  
+**更新:** 2026-11-17  
 **最優先:** コードと計画の整理 → **既存MulmoCastを動かす最小実証** → 無料接続 → Web化。別の動画制作基盤は開発しない。
 
 ## 決めた仕様
@@ -47,6 +47,8 @@
 **最初の安全PR（PR #12）:** 本番の無料生成元がまだ承認されていないため、まず`movie --sns-free-only`を追加。ローカル素材と既存mockのみ許可し、意図しない有料画像/動画/TTS/翻訳などの経路を事前拒否する。既存のオフライン連続動画テストを同モードで通す。GroqのFree Planを明示確認した場合にのみ、既存GraphAIへ`openai/gpt-oss-20b`を渡す企画生成入口も追加（実APIはキーがなく未検証）。[無料モードの詳細](./FREE_TIER_SAFETY.md)
 
 **画像AI実績（PR #13）:** Cloudflare Workers FreeのFLUX.1 Schnellを既存画像Agentに接続。[実際のCloudflare APIを使用した手動試験](https://github.com/ToramaruA/sns-video-factory/actions/runs/44014541975)で**静止画1枚→2秒・720×1280のMP4**に成功（2026-11-17）。ここでは画像を動かすI2Vは実行していない。
+
+**GroqとFLUXの連結（PR #15、検証中）:** すでに単独成功したGroqの3カット企画を、既存のFLUX画像AgentとMulmoCast `movie --sns-free-only` に渡し、無音・静止画3カット・6秒の縦型MP4を作る**手動限定**の経路を追加。企画原本の `moviePrompt` は保持し、別の安全なプレビュー用MulmoScriptを構築する。Groq FreeとWorkers Freeの双方を実行前に利用者が確認した場合にのみ実API呼び出し可能。CIではオフラインテストだけを行う。**実動画I2V・音声・Web化は未完成であり、3枚実生成は手動成功を確認するまで実証済みとしない。** [連結実験の詳細](../../experiments/07-groq-flux-three-cut/README.md)。
 
 **次の企画AI段階（PR #14）:** Groq Free Planの`gpt-oss-20b`を使った既存GraphAIの3カット・縦型MulmoScript企画生成を、**手動で明示実行**できるようにする。テストはモックで通し、実APIテストはGroqのFree契約とキーが登録されてから。[手動企画生成の説明](./GROQ_FREE_PLANNING.md)。**企画を作るだけ**で、この段階で画像やI2Vは実行しない。
 

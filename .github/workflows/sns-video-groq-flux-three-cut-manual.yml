@@ -1,0 +1,89 @@
+name: SNS Video Factory - Groq to FLUX 3-cut preview (MANUAL ONLY)
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_groq_free_plan:
+        description: 'I verified this Groq organization uses the FREE Plan (not Developer).'
+        type: boolean
+        required: true
+        default: false
+      confirm_cloudflare_free_plan:
+        description: 'I verified this Cloudflare Workers account is FREE (not Paid). Generate up to 3 images.'
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sns-groq-flux-three-cut-manual
+  cancel-in-progress: false
+
+jobs:
+  three-cut-preview:
+    if: inputs.confirm_groq_free_plan == true && inputs.confirm_cloudflare_free_plan == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      SNS_VIDEO_GROQ_FREE_PLAN_CONFIRMED: '1'
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      LLM_GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      SNS_VIDEO_CLOUDFLARE_FREE_PLAN_CONFIRMED: '1'
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      OPENAI_API_KEY: ''
+      LLM_OPENAI_API_KEY: ''
+      TTS_OPENAI_API_KEY: ''
+      IMAGE_OPENAI_API_KEY: ''
+      ANTHROPIC_API_KEY: ''
+      ANTHROPIC_API_TOKEN: ''
+      GEMINI_API_KEY: ''
+      REPLICATE_API_TOKEN: ''
+      ELEVENLABS_API_KEY: ''
+      SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT: '0'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Require both free-plan keys
+        run: |
+          test -n "$GROQ_API_KEY" || { echo 'Missing GROQ_API_KEY secret' >&2; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID secret' >&2; exit 1; }
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing CLOUDFLARE_API_TOKEN secret' >&2; exit 1; }
+      - name: Prepare existing MulmoCast and FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          npm install -g yarn@1.22.22
+          yarn install --frozen-lockfile
+          yarn build
+      - name: Real Groq generates one 3-shot plan
+        run: |
+          ./node_modules/.bin/tsx experiments/06-groq-planning/run.ts
+      - name: Preserve plan and make a safe still-only render script
+        run: |
+          ./node_modules/.bin/tsx experiments/07-groq-flux-three-cut/prepare_preview.ts
+      - name: Real FLUX makes 3 stills and original MulmoCast renders the 6-second MP4
+        run: |
+          node lib/cli/bin.js movie experiments/07-groq-flux-three-cut/generated/three-cut-preview.json --sns-free-only
+          video=output/three-cut-preview_ja.mp4
+          test -s "$video"
+          dimensions="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$video")"
+          test "$dimensions" = "720x1280"
+          python3 -c 'import subprocess,sys; d=float(subprocess.check_output(["ffprobe","-v","error","-show_entries","format=duration","-of","default=noprint_wrappers=1:nokey=1",sys.argv[1]])); assert 5.7 <= d <= 6.5, d' "$video"
+          echo 'PASS: real Groq plan -> 3 FLUX still prompts -> existing MulmoCast -> 6s 720x1280 MP4'
+      - name: Save plan, still preview and generated images
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: groq-flux-three-cut-still-preview
+          path: |
+            experiments/06-groq-planning/generated/sns-video-plan.json
+            experiments/07-groq-flux-three-cut/generated/three-cut-preview.json
+            output/three-cut-preview_ja.mp4
+            output/images/three-cut-preview/**
+          if-no-files-found: error
+          retention-days: 3
