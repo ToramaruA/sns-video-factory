@@ -9,7 +9,7 @@ import { mulmoScriptSchema } from "../../src/types/schema.js";
 import { validateSnsShortPlan } from "../../src/sns-video/planning/validate_sns_short.js";
 import { assertGroqFreePlanConfigured, GROQ_FREE_PLANNING_MODEL } from "../../src/sns-video/safety/free_planning.js";
 
-test("the new SNS 3-cut template reuses MulmoCast's existing prompt template and schema", () => {
+test("the SNS variable-cut prompt template reuses MulmoCast's existing prompt template and schema", () => {
   const template = getScriptFromPromptTemplate("sns_video_short");
   assert.ok(template);
   assert.match(readTemplatePrompt("sns_video_short"), /cloudflare_free/);
@@ -20,7 +20,7 @@ test("the new SNS 3-cut template reuses MulmoCast's existing prompt template and
   assert.equal(GROQ_FREE_PLANNING_MODEL, "openai/gpt-oss-20b");
 });
 
-test("existing GraphAI text-to-script works with the new 3-cut template, without using any external LLM", async () => {
+test("existing GraphAI text-to-script works with the variable-cut template, without using any external LLM", async () => {
   const template = getScriptFromPromptTemplate("sns_video_short");
   assert.ok(template);
   const fixture = {
@@ -67,8 +67,26 @@ test("unsafe or placeholder plans are rejected before any downstream paid provid
   assert.throws(() => validateSnsShortPlan(placeholder), /real image prompt/);
   const injectedAudio = mulmoScriptSchema.parse({ ...withPrompts, audioParams: { suppressSpeech: false } });
   assert.throws(() => validateSnsShortPlan(injectedAudio), /audio/);
-  const extraBeat = mulmoScriptSchema.parse({ ...withPrompts, beats: [...withPrompts.beats, withPrompts.beats[0]] });
-  assert.throws(() => validateSnsShortPlan(extraBeat), /exactly three beats/);
+  const fourShots = mulmoScriptSchema.parse({
+    ...withPrompts,
+    beats: [...withPrompts.beats, { ...withPrompts.beats[0], id: "shot_04", duration: 5 }],
+  });
+  assert.doesNotThrow(() => validateSnsShortPlan(fourShots));
+  const tooMany = mulmoScriptSchema.parse({
+    ...withPrompts,
+    beats: Array.from({ length: 13 }, (_, i) => ({ ...withPrompts.beats[0], id: `shot_${i + 1}`, duration: 2 })),
+  });
+  assert.throws(() => validateSnsShortPlan(tooMany), /1-12 beats/);
+  const repeated = mulmoScriptSchema.parse({
+    ...withPrompts,
+    beats: [...withPrompts.beats, { ...withPrompts.beats[0] }],
+  });
+  assert.throws(() => validateSnsShortPlan(repeated), /unique nonempty id/);
+  const tooLong = mulmoScriptSchema.parse({
+    ...withPrompts,
+    beats: [{ ...withPrompts.beats[0], duration: 30 }],
+  });
+  assert.throws(() => validateSnsShortPlan(tooLong), /1-15 seconds/);
 });
 
 test("Groq Free Plan and API key must both be explicitly provided, without using the API", () => {
