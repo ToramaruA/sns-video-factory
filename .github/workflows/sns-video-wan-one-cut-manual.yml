@@ -1,0 +1,119 @@
+name: SNS Video Factory - 1-cut Wan I2V experiment (MANUAL ONLY)
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Run ID of a completed Groq to FLUX 3-cut preview; its artifact must not be expired.'
+        type: string
+        required: true
+        default: '44066142099'
+      selected_beat:
+        description: 'Animate ONLY ONE existing FLUX still, keep the other two cuts as stills.'
+        type: choice
+        required: true
+        default: main
+        options:
+          - hook
+          - main
+          - closing
+      confirm_anonymous_zerogpu_trial:
+        description: 'I confirm this is one anonymous ZeroGPU demo experiment within its free quota (not a production service).'
+        type: boolean
+        required: true
+        default: false
+      confirm_third_party_demo_upload:
+        description: 'I agree to upload one AI-generated, non-private still to the third-party Wan2.2 Hugging Face Space.'
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: sns-one-wan-anonymous-trial
+  cancel-in-progress: false
+
+jobs:
+  one-wan-cut:
+    if: inputs.confirm_anonymous_zerogpu_trial == true && inputs.confirm_third_party_demo_upload == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      # No billed or authenticated provider is permitted in this one-time trial.
+      OPENAI_API_KEY: ''
+      LLM_OPENAI_API_KEY: ''
+      TTS_OPENAI_API_KEY: ''
+      IMAGE_OPENAI_API_KEY: ''
+      GROQ_API_KEY: ''
+      LLM_GROQ_API_KEY: ''
+      CLOUDFLARE_API_TOKEN: ''
+      ANTHROPIC_API_KEY: ''
+      ANTHROPIC_API_TOKEN: ''
+      GEMINI_API_KEY: ''
+      REPLICATE_API_TOKEN: ''
+      ELEVENLABS_API_KEY: ''
+      HF_TOKEN: ''
+      HUGGING_FACE_HUB_TOKEN: ''
+      HF_HUB_DISABLE_IMPLICIT_TOKEN: '1'
+      SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT: '0'
+      SNS_VIDEO_FREE_VIDEO_LEDGER_PATH: ${{ runner.temp }}/sns-video-wan-once-ledger.json
+      SNS_VIDEO_PYTHON_BINARY: ${{ github.workspace }}/.venv/bin/python
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Download only the earlier approved 3-cut artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: groq-flux-three-cut-still-preview
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ github.token }}
+          path: imported
+      - name: Install existing MulmoCast and optional Wan bridge
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          npm install -g yarn@1.22.22
+          yarn install --frozen-lockfile
+          yarn build
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --disable-pip-version-check gradio_client==2.7.2
+      - name: Prepare one safe local still and motion prompt (no API calls)
+        run: |
+          ./node_modules/.bin/tsx experiments/08-one-cut-wan/prepare.ts probe imported "${{ inputs.selected_beat }}"
+      - name: Run exactly one anonymous Wan I2V request through EXISTING MulmoCast agent
+        env:
+          SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT: '1'
+        run: |
+          echo 'ONE EXPERIMENT ONLY: anonymous Hugging Face Space; never a production or commercial usage approval.'
+          node lib/cli/bin.js movie experiments/08-one-cut-wan/generated/i2v-one-cut.json
+          test -s "output/images/i2v-one-cut/${{ inputs.selected_beat }}.mov"
+      - name: Mix this ONE animated shot with TWO saved stills using free-only MulmoCast
+        run: |
+          ./node_modules/.bin/tsx experiments/08-one-cut-wan/prepare.ts mixed imported "${{ inputs.selected_beat }}"
+          node lib/cli/bin.js movie experiments/08-one-cut-wan/generated/mixed-i2v-preview.json --sns-free-only
+          video=output/mixed-i2v-preview_ja.mp4
+          test -s "$video"
+          dimensions="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$video")"
+          test "$dimensions" = "720x1280"
+          python3 -c 'import subprocess,sys; d=float(subprocess.check_output(["ffprobe","-v","error","-show_entries","format=duration","-of","default=noprint_wrappers=1:nokey=1",sys.argv[1]])); assert 5.7 <= d <= 6.5, d' "$video"
+          echo 'PASS: saved Groq/FLUX stills -> one Wan 2-second clip -> original MulmoCast -> 6-second portrait MP4'
+      - name: Save one-cut experiment and full three-cut local render
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: wan-single-moving-cut-with-two-stills
+          path: |
+            experiments/08-one-cut-wan/generated/i2v-one-cut.json
+            experiments/08-one-cut-wan/generated/mixed-i2v-preview.json
+            output/i2v-one-cut_ja.mp4
+            output/mixed-i2v-preview_ja.mp4
+          if-no-files-found: error
+          retention-days: 3
