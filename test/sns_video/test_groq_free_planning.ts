@@ -61,6 +61,16 @@ test("unsafe or placeholder plans are rejected before any downstream paid provid
   };
   const safe = mulmoScriptSchema.parse(withPrompts);
   assert.doesNotThrow(() => validateSnsShortPlan(safe));
+  const withShortVoice = mulmoScriptSchema.parse({
+    ...withPrompts,
+    beats: withPrompts.beats.map((beat) => ({ ...beat, text: "美しい音楽をお楽しみください。" })),
+  });
+  assert.doesNotThrow(() => validateSnsShortPlan(withShortVoice));
+  const voiceTooLong = mulmoScriptSchema.parse({
+    ...withPrompts,
+    beats: [{ ...withPrompts.beats[0], text: "あ".repeat(91) }],
+  });
+  assert.throws(() => validateSnsShortPlan(voiceTooLong), /90 characters/);
   const wrongProvider = mulmoScriptSchema.parse({ ...withPrompts, movieParams: { provider: "replicate" } });
   assert.throws(() => validateSnsShortPlan(wrongProvider), /movie generator/);
   const placeholder = mulmoScriptSchema.parse(template);
