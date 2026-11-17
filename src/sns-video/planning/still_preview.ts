@@ -28,7 +28,7 @@ export const makeSnsStillPreview = (plan: MulmoScript, env: Record<string, strin
     lang: "ja",
     canvasSize: { width: 720, height: 1280 },
     imageParams: { provider: "cloudflare_free", model: CLOUDFLARE_FLUX_MODEL },
-    movieParams: { provider: "mock", model: "mock-model" },
+    movieParams: { provider: "mock", model: "mock-model", fillOption: { style: "aspectFill" } },
     audioParams: { suppressSpeech: true, introPadding: 0, padding: 0, closingPadding: 0, outroPadding: 0, bgmVolume: 0 },
     beats: plan.beats.map((beat) => ({
       id: beat.id,
