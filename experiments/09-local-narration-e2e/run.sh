@@ -14,9 +14,9 @@ export SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT=0 MULMO_STRICT_NETWORK=1
 mkdir -p "$HERE/generated/assets"
 
 # One locally animated video and two locally generated images. No AI services.
-ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'color=c=0x12273f:s=720x1280' -frames:v 1 -update 1 "$HERE/generated/assets/hook.png"
-ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'testsrc2=size=720x1280:rate=30:duration=2' -an -c:v libx264 -preset ultrafast -pix_fmt yuv420p -t 2 "$HERE/generated/assets/main.mov"
-ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'color=c=0xb52c3d:s=720x1280' -frames:v 1 -update 1 "$HERE/generated/assets/closing.png"
+ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'color=c=0x12273f:s=640x640' -frames:v 1 -update 1 "$HERE/generated/assets/hook.png"
+ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'testsrc2=size=640x640:rate=30:duration=2' -an -c:v libx264 -preset ultrafast -pix_fmt yuv420p -t 2 "$HERE/generated/assets/main.mov"
+ffmpeg -hide_banner -loglevel error -y -f lavfi -i 'color=c=0xb52c3d:s=640x640' -frames:v 1 -update 1 "$HERE/generated/assets/closing.png"
 
 # These are audible test tones, NOT synthesized Japanese speech. Replace them
 # with consented human recordings or an approved free Japanese TTS later.
@@ -46,5 +46,19 @@ from array import array
 samples = array("h"); samples.frombytes(raw)
 rms = (sum(v*v for v in samples) / len(samples)) ** 0.5
 assert rms > 100, rms
-print(f"PASS: 3 local beats -> 6s 720x1280 movie, AAC non-silent audio RMS={rms:.0f}; no TTS/API calls")
+# The INPUT frames are intentionally SQUARE (640x640). All output cuts
+# must fill the portrait canvas rather than merely living inside a 9:16 MP4
+# with black letterbox padding. Sample near top and bottom in all 3 cuts.
+for when in (0.5, 2.5, 4.5):
+    for y in (16, 1232):
+        patch = subprocess.check_output([
+            "ffmpeg", "-nostdin", "-hide_banner", "-loglevel", "error",
+            "-ss", str(when), "-i", p,
+            "-vf", f"crop=32:32:344:{y},format=rgb24",
+            "-frames:v", "1", "-f", "rawvideo", "-"
+        ])
+        assert len(patch) == 32 * 32 * 3, (when, y, len(patch))
+        average = sum(patch) / len(patch)
+        assert average > 15, f"Detected near-black portrait padding at t={when}s y={y}: mean={average:.1f}"
+print(f"PASS: square 640x640 source fills 9:16 without letterbox; 3 local beats -> 6s 720x1280 movie, AAC non-silent audio RMS={rms:.0f}; no TTS/API calls")
 PY
