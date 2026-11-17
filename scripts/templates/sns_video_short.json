@@ -1,0 +1,50 @@
+{
+  "$mulmocast": {
+    "version": "1.1"
+  },
+  "title": "[日本語の魅力的な動画タイトル]",
+  "lang": "ja",
+  "canvasSize": {
+    "width": 720,
+    "height": 1280
+  },
+  "imageParams": {
+    "provider": "cloudflare_free",
+    "model": "@cf/black-forest-labs/flux-1-schnell"
+  },
+  "movieParams": {
+    "provider": "mock",
+    "model": "mock-model"
+  },
+  "audioParams": {
+    "suppressSpeech": true,
+    "introPadding": 0,
+    "padding": 0,
+    "closingPadding": 0,
+    "outroPadding": 0,
+    "bgmVolume": 0
+  },
+  "beats": [
+    {
+      "id": "hook",
+      "text": "",
+      "duration": 2,
+      "imagePrompt": "[カット1の英語の静止画生成プロンプト]",
+      "moviePrompt": "[カット1の英語の動きの指示]"
+    },
+    {
+      "id": "main",
+      "text": "",
+      "duration": 2,
+      "imagePrompt": "[カット2の英語の静止画生成プロンプト]",
+      "moviePrompt": "[カット2の英語の動きの指示]"
+    },
+    {
+      "id": "closing",
+      "text": "",
+      "duration": 2,
+      "imagePrompt": "[カット3の英語の静止画生成プロンプト]",
+      "moviePrompt": "[カット3の英語の動きの指示]"
+    }
+  ]
+}
