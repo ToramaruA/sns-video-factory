@@ -43,7 +43,7 @@ export const makeSnsLocalNarrationPreview = (source: MulmoScript, narrationLines
     lang: "ja",
     canvasSize: { width: 720, height: 1280 },
     imageParams: { provider: "mock", model: "mock-model" },
-    movieParams: { provider: "mock", model: "mock-model" },
+    movieParams: { provider: "mock", model: "mock-model", fillOption: { style: "aspectFill" } },
     speechParams: { speakers: { Presenter: { provider: "mock", voiceId: "shimmer" } } },
     audioParams: {
       suppressSpeech: true,

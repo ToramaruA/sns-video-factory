@@ -39,6 +39,7 @@ test("real Groq-format plan can produce a free-only, three-image, six-second Mul
   );
   assert.equal(preview.imageParams.provider, "cloudflare_free");
   assert.equal(preview.movieParams.provider, "mock");
+  assert.deepEqual(preview.movieParams.fillOption, { style: "aspectFill" });
   assert.equal(preview.audioParams.suppressSpeech, true);
   assert.ok(preview.beats.every((beat) => !beat.moviePrompt && !beat.soundEffectPrompt && !beat.audio));
   assert.equal(preview.audioParams.bgm, undefined);

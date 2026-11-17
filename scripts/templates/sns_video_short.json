@@ -14,7 +14,10 @@
   },
   "movieParams": {
     "provider": "mock",
-    "model": "mock-model"
+    "model": "mock-model",
+    "fillOption": {
+      "style": "aspectFill"
+    }
   },
   "audioParams": {
     "suppressSpeech": true,
