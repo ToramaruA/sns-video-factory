@@ -48,7 +48,9 @@
 
 **画像AI実績（PR #13）:** Cloudflare Workers FreeのFLUX.1 Schnellを既存画像Agentに接続。[実際のCloudflare APIを使用した手動試験](https://github.com/ToramaruA/sns-video-factory/actions/runs/44014541975)で**静止画1枚→2秒・720×1280のMP4**に成功（2026-11-17）。ここでは画像を動かすI2Vは実行していない。
 
-**GroqとFLUXの連結（PR #15、検証中）:** すでに単独成功したGroqの3カット企画を、既存のFLUX画像AgentとMulmoCast `movie --sns-free-only` に渡し、無音・静止画3カット・6秒の縦型MP4を作る**手動限定**の経路を追加。企画原本の `moviePrompt` は保持し、別の安全なプレビュー用MulmoScriptを構築する。Groq FreeとWorkers Freeの双方を実行前に利用者が確認した場合にのみ実API呼び出し可能。CIではオフラインテストだけを行う。**実動画I2V・音声・Web化は未完成であり、3枚実生成は手動成功を確認するまで実証済みとしない。** [連結実験の詳細](../../experiments/07-groq-flux-three-cut/README.md)。
+**GroqとFLUXの連結（PR #15、実API成功）:** すでに単独成功したGroqの3カット企画を、既存のFLUX画像AgentとMulmoCast `movie --sns-free-only` に渡し、無音・静止画3カット・6秒の縦型MP4を作る**手動限定**の経路を追加。企画原本の `moviePrompt` は保持し、別の安全なプレビュー用MulmoScriptを構築する。Groq FreeとWorkers Freeの双方を実行前に利用者が確認した場合にのみ実API呼び出し可能。CIではオフラインテストだけを行う。**3枚の実画像生成と6秒MP4は[2026-11-17の手動実行](https://github.com/ToramaruA/sns-video-factory/actions/runs/44066142099)で成功。実動画I2V・音声・Web化は未完成。** [連結実験の詳細](../../experiments/07-groq-flux-three-cut/README.md)。
+
+**次の実動画の実証（PR #16、手動実験の準備）:** PR #15で生成したGroq企画とFLUX画像3枚を再利用し、既存のWan 2.2実験Agentで**1カットだけ2秒I2V**にし、残り2枚の静止画と既存MulmoCastで6秒MP4へ結合する。Groq/FLUXの再生成なし。Spaceへの匿名デモ送信には明示的な2条件確認が必要で、CIでは外部I2Vを実行しない。Wan/ZeroGPUは商用共有サービスの供給源として未承認であり、通常の無料モードへ加えない。[実験手順](../../experiments/08-one-cut-wan/README.md)。**実動画成功は手動実験が終わるまで未確認。**
 
 **次の企画AI段階（PR #14）:** Groq Free Planの`gpt-oss-20b`を使った既存GraphAIの3カット・縦型MulmoScript企画生成を、**手動で明示実行**できるようにする。テストはモックで通し、実APIテストはGroqのFree契約とキーが登録されてから。[手動企画生成の説明](./GROQ_FREE_PLANNING.md)。**企画を作るだけ**で、この段階で画像やI2Vは実行しない。
 
