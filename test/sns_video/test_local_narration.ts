@@ -30,6 +30,7 @@ test("local narration uses existing beat.audio with no TTS or billing calls", ()
   assert.equal(script.audioParams.suppressSpeech, true);
   assert.equal(script.audioParams.audioVolume, 1);
   assert.equal(script.audioParams.bgmVolume, 0);
+  assert.deepEqual(script.movieParams.fillOption, { style: "aspectFill" });
   assert.equal(script.speechParams.speakers.Presenter.provider, "mock");
   assert.deepEqual(
     script.beats.map((beat) => beat.text),
