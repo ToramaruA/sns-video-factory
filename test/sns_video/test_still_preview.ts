@@ -47,6 +47,31 @@ test("real Groq-format plan can produce a free-only, three-image, six-second Mul
   assert.equal(original.beats[0].moviePrompt, "Slow camera movement during scene 1");
 });
 
+test("variable number and durations of cuts carry through to original MulmoCast without paid fallbacks", () => {
+  const base = getPlan();
+  for (const durations of [[6], [2, 4, 3, 6, 5]]) {
+    const plan = MulmoScriptMethods.validate({
+      ...base,
+      beats: durations.map((duration, index) => ({
+        ...base.beats[index % base.beats.length],
+        id: `shot_${index + 1}`,
+        duration,
+        imagePrompt: `Cinematic concert scene ${index + 1}, center-safe composition`,
+        moviePrompt: `Gentle camera movement, scene ${index + 1}`,
+      })),
+    });
+    const result = makeSnsStillPreview(plan, freeEnv);
+    assert.equal(result.beats.length, durations.length);
+    assert.deepEqual(
+      result.beats.map((beat) => beat.duration),
+      durations,
+    );
+    assert.ok(result.beats.every((beat) => beat.imagePrompt && !beat.moviePrompt && !beat.audio));
+    assert.equal(result.movieParams.provider, "mock");
+    assert.equal(result.audioParams.suppressSpeech, true);
+  }
+});
+
 test("Free account confirmation and credentials are required before creating a renderable preview", () => {
   const plan = getPlan();
   assert.throws(() => makeSnsStillPreview(plan, {}), /Workers Free/);

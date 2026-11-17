@@ -1,5 +1,5 @@
 /**
- * Turn a validated 3-cut MulmoScript plan into a still-image preview.
+ * Turn a validated variable-cut MulmoScript plan into a still-image preview.
  * Keep the original plan (including moviePrompt) intact for future I2V.
  * This is a narrow, explicit handoff to the existing MulmoCast movie CLI,
  * not a second storyboard schema or a replacement render engine.
@@ -33,11 +33,11 @@ export const makeSnsStillPreview = (plan: MulmoScript, env: Record<string, strin
     beats: plan.beats.map((beat) => ({
       id: beat.id,
       text: "",
-      duration: 2,
+      duration: beat.duration,
       imagePrompt: beat.imagePrompt?.trim(),
     })),
   });
-  // All three beats are checked before starting the actual MulmoCast CLI.
+  // Validate the entire job before calling the original MulmoCast movie CLI.
   assertSnsNoPaidApiMovie(preview, { env });
   return preview;
 };
