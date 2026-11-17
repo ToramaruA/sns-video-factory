@@ -83,9 +83,9 @@ def add_narration(plan, preview, synthesize, duration_of, pad_file, directory):
     if total > 60:
         raise ValueError("narrated video exceeds 60s Free preview limit")
     (directory / "VOICE_ATTRIBUTION.txt").write_text(
-        "Required when publishing: VOICEVOX Nemo\\n"
-        "VOICEVOX Nemo synthesized voices require attribution in the video or post description.\\n"
-        "https://voicevox.hiroshiba.jp/nemo/term/\\n",
+        "Required when publishing: VOICEVOX Nemo\n"
+        "VOICEVOX Nemo synthesized voices require attribution in the video or post description.\n"
+        "https://voicevox.hiroshiba.jp/nemo/term/\n",
         encoding="utf8",
     )
     return preview
@@ -120,7 +120,7 @@ def run():
         )
 
     result = add_narration(plan, preview, synth, wav_duration, pad, PREVIEW.parent)
-    PREVIEW.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\\n", encoding="utf8")
+    PREVIEW.write_text(json.dumps(result, ensure_ascii=False, indent=2) + "\n", encoding="utf8")
     print(f"PASS: {len(result['beats'])} beats with optional local VOICEVOX Nemo audio; paid TTS disabled")
 
 
