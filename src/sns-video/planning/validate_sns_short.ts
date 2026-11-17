@@ -27,7 +27,7 @@ export const validateSnsShortPlan = (script: MulmoScript): MulmoScript => {
       throw new Error(`${label}: duration must be 1-15 seconds`);
     }
     totalSeconds += beat.duration ?? 0;
-    if (beat.text !== "") throw new Error(`${label}: free image planning must not enable speech`);
+    if ((beat.text?.length ?? 0) > 90) throw new Error(`${label}: narration text must be at most 90 characters`);
     if (!beat.id?.trim() || ids.has(beat.id)) throw new Error(`${label}: unique nonempty id is required`);
     ids.add(beat.id);
     if (!beat.imagePrompt?.trim() || /^\[.*\]$/.test(beat.imagePrompt)) throw new Error(`${label}: a real image prompt is required`);
