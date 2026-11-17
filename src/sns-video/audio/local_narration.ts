@@ -11,11 +11,7 @@ import { MulmoScriptMethods } from "../../methods/mulmo_script.js";
 import { assertSnsNoPaidApiMovie } from "../safety/no_paid_api.js";
 import { SNS_PREVIEW_BEAT_IDS } from "../planning/one_cut_i2v_preview.js";
 
-export const makeSnsLocalNarrationPreview = (
-  source: MulmoScript,
-  narrationLines: readonly string[],
-  audioFormat: "wav" | "mp3" = "wav",
-): MulmoScript => {
+export const makeSnsLocalNarrationPreview = (source: MulmoScript, narrationLines: readonly string[], audioFormat: "wav" | "mp3" = "wav"): MulmoScript => {
   if (source.beats.length !== 3 || narrationLines.length !== 3) {
     throw new Error("Local narration preview requires exactly three cuts and three speech lines");
   }
