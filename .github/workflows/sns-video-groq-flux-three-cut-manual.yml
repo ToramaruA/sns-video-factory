@@ -1,15 +1,19 @@
-name: SNS Video Factory - Groq to FLUX 3-cut preview (MANUAL ONLY)
+name: Free MulmoCast - 文章から縦型動画（無料枠・静止画）
 
 on:
   workflow_dispatch:
     inputs:
+      brief:
+        description: 'Describe the SNS video you want (Japanese, max 3500 chars). AI chooses 1-12 shots and timing.'
+        type: string
+        required: true
       confirm_groq_free_plan:
         description: 'I verified this Groq organization uses the FREE Plan (not Developer).'
         type: boolean
         required: true
         default: false
       confirm_cloudflare_free_plan:
-        description: 'I verified this Cloudflare Workers account is FREE (not Paid). Generate up to 3 images.'
+        description: 'I verified this Cloudflare Workers account is FREE (not Paid). Generate 1-12 images (up to the Free Tier limits).'
         type: boolean
         required: true
         default: false
@@ -18,15 +22,16 @@ permissions:
   contents: read
 
 concurrency:
-  group: sns-groq-flux-three-cut-manual
+  group: sns-groq-flux-free-manual
   cancel-in-progress: false
 
 jobs:
-  three-cut-preview:
+  free-preview:
     if: inputs.confirm_groq_free_plan == true && inputs.confirm_cloudflare_free_plan == true
     runs-on: ubuntu-latest
     timeout-minutes: 25
     env:
+      SNS_VIDEO_BRIEF: ${{ inputs.brief }}
       SNS_VIDEO_GROQ_FREE_PLAN_CONFIRMED: '1'
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       LLM_GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
@@ -60,26 +65,25 @@ jobs:
           npm install -g yarn@1.22.22
           yarn install --frozen-lockfile
           yarn build
-      - name: Real Groq generates one 3-shot plan
+      - name: Existing GraphAI creates a flexible-cut MulmoScript
         run: |
           ./node_modules/.bin/tsx experiments/06-groq-planning/run.ts
       - name: Preserve plan and make a safe still-only render script
         run: |
           ./node_modules/.bin/tsx experiments/07-groq-flux-three-cut/prepare_preview.ts
-      - name: Real FLUX makes 3 stills and original MulmoCast renders the 6-second MP4
+      - name: Original MulmoCast generates all stills and renders portrait MP4
         run: |
           node lib/cli/bin.js movie experiments/07-groq-flux-three-cut/generated/three-cut-preview.json --sns-free-only
           video=output/three-cut-preview_ja.mp4
           test -s "$video"
           dimensions="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$video")"
           test "$dimensions" = "720x1280"
-          python3 -c 'import subprocess,sys; d=float(subprocess.check_output(["ffprobe","-v","error","-show_entries","format=duration","-of","default=noprint_wrappers=1:nokey=1",sys.argv[1]])); assert 5.7 <= d <= 6.5, d' "$video"
-          echo 'PASS: real Groq plan -> 3 FLUX still prompts -> existing MulmoCast -> 6s 720x1280 MP4'
+          python3 -c 'import json,subprocess,sys; p=json.load(open(sys.argv[2])); n=len(p["beats"]); expected=sum(b["duration"] for b in p["beats"]); actual=float(subprocess.check_output(["ffprobe","-v","error","-show_entries","format=duration","-of","default=noprint_wrappers=1:nokey=1",sys.argv[1]])); assert 1<=n<=12,(n,expected); assert abs(actual-expected)<1.0,(actual,expected); print(f"PASS: {n} cuts, {actual:.1f}s / requested {expected:.1f}s, portrait MP4 (stills, no I2V/TTS)")' "$video" experiments/07-groq-flux-three-cut/generated/three-cut-preview.json
       - name: Save plan, still preview and generated images
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: groq-flux-three-cut-still-preview
+          name: free-mulmocast-portrait-still-video
           path: |
             experiments/06-groq-planning/generated/sns-video-plan.json
             experiments/07-groq-flux-three-cut/generated/three-cut-preview.json
