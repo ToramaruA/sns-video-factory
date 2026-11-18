@@ -4,6 +4,7 @@
  * not provide an account plan proof in this workflow.
  */
 export const CLOUDFLARE_FLUX_MODEL = "@cf/black-forest-labs/flux-1-schnell";
+export const CLOUDFLARE_FLUX_REFERENCE_MODEL = "@cf/black-forest-labs/flux-2-klein-4b";
 export const CLOUDFLARE_IMAGE_PROVIDER = "cloudflare_free";
 export const CLOUDFLARE_FREE_PLAN_CONFIRMATION = "SNS_VIDEO_CLOUDFLARE_FREE_PLAN_CONFIRMED";
 
