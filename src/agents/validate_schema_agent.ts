@@ -22,10 +22,25 @@ export const extractMulmoJsonText = (response: string): string => {
   if (start === -1) return response.trim();
   const firstNewline = response.indexOf("\n", start + 3);
   if (firstNewline === -1) return response.trim();
-  const language = response.slice(start + 3, firstNewline).trim().toLowerCase();
+  const languageToken = response.slice(start + 3, firstNewline);
+  const language = languageToken.trim().toLowerCase();
   if (language !== "" && language !== "json") return response.trim();
   const end = response.indexOf("```", firstNewline + 1);
   return end === -1 ? response.trim() : response.slice(firstNewline + 1, end).trim();
+};
+
+const sanitizedReason = (error: unknown): string => {
+  if (error instanceof SyntaxError) return "Response is not parseable JSON";
+  if (error instanceof Error && error.message === "text is required") return "Groq response text was missing";
+  const issues = (error as { issues?: { path?: PropertyKey[]; code?: string }[] } | null)?.issues;
+  if (issues?.length) {
+    const paths = issues.slice(0, 6).map((issue) => {
+      const path = String(issue.path?.join(".") || "$root");
+      return path + ":" + String(issue.code || "invalid");
+    });
+    return paths.join(", ");
+  }
+  return error instanceof Error ? error.name : "Unknown validation error";
 };
 
 /**
@@ -50,13 +65,7 @@ export const validateSchemaAgent: AgentFunction<object, ValidateMulmoScriptRespo
     if (process.env.SNS_VIDEO_FREE_ONLY === "1") {
       // Log schema paths and diagnostic types only. Do not expose Groq output,
       // creative brief or any possibly private content to public Actions logs.
-      const issues = (error as { issues?: { path?: PropertyKey[]; code?: string }[] } | null)?.issues;
-      const reason = error instanceof SyntaxError
-        ? "Response is not parseable JSON (raw and fenced formats both supported)"
-        : issues?.length
-          ? issues.slice(0, 6).map((issue) => String(issue.path?.join(".") || "$root") + ":" + String(issue.code || "invalid")).join(", ")
-          : error instanceof Error ? error.name : "Unknown validation error";
-      GraphAILogger.info("Free MulmoScript validation rejected response: " + reason);
+      GraphAILogger.info("Free MulmoScript validation rejected response: " + sanitizedReason(error));
     }
     return {
       isValid: false,
