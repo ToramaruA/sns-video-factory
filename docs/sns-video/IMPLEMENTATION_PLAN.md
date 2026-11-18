@@ -89,6 +89,9 @@
 
 **P0 — 1本のMulmoScriptから、音声・画像・I2V・字幕・MP4を一括生成できるようにする。**
 
+**実装状況（2026-11-19）:** 同じMulmoScriptにFLUX画像3枚、Wan動画3本、日本語Gemini TTS、字幕の設定を保持する `docs/sns-video/examples/experimental-three-cut-onepass-narrated.json` を追加。Wan実験の最大3回・明示同意とGemini無料枠確認をそれぞれ維持し、`mulmo movie <script>` 1回で処理できるよう無料モードの事前ガードを変更。GitHub Actions `onepass_narrated` を追加（初期選択）。ビルド・型チェック・単体/回帰テスト・LintはCI [44333422547](https://github.com/ToramaruA/sns-video-factory/actions/runs/44333422547) で成功。**一括実API生成は未実行**。成功後にP0完了とする。
+
+
 1. いまは無料ガードが「Wanで動画を生成するbeatでは `suppressSpeech: true` が必須」としており、同一MulmoScriptの同一実行でGemini TTSとWanを同時使用できない。無料枠の事前チェックを維持したままこの制限を解く。
 2. 固定サンプル名や過去のartifact run IDを入力前提とせず、**MulmoScriptのパス指定**で既存MulmoCast CLI `movie` を動かす最小の実行方法を整える。動画の参照画像/素材・beat単位の指示を壊さず、勝手な静止画への変更をしない。
 3. **日本語音声＋動画を同時に作る3カットMulmoScript**を実APIで検証する。期待する画面数、各カットの実動画、音声、字幕、720×1280 MP4の有無を検証し、無料枠・実験同意の確認は最初に行う。ここが「最小の一括動作確認」の完了基準。
