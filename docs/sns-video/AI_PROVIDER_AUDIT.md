@@ -1,5 +1,22 @@
 # AI接続の監査・最小実装（2026-11-18）
 
+> **注意（2026-11-19）:** この文書の旧一覧は2026-11-18時点の監査記録です。I2V「未対応」やTTS「実通信未検証」といった記述は、その後の試作成功を反映していません。最新の実績と次の判断は以下、および [IMPLEMENTATION_PLAN.md の第7節](./IMPLEMENTATION_PLAN.md) を参照してください。
+
+## 2026-11-19 実APIで確認した最新状態
+
+| 工程 | 実績 | 残る制限・注意 |
+| --- | --- | --- |
+| Groq無料LLM → `tool scripting` | 元MulmoCastに既存接続あり | **新ブランチでの実通信・MulmoScript品質は未確認** |
+| Cloudflare FLUX.2 Klein 4B | 実API画像生成成功、3カット分の素材生成も確認 | 写真の人物同一性や品質は未合格。Workers Freeアカウント確認が必要 |
+| Wan 2.2 I2V | **3カットすべて実動画化**に成功: [実行44319782951](https://github.com/ToramaruA/sns-video-factory/actions/runs/44319782951) | Hugging Face ZeroGPU公開デモ・匿名利用・1回につき2秒、手動で最大3回。商用/SNS宣伝運用と持続利用の条件は未承認 |
+| Gemini 3.8 Flash TTS | **3本の日本語TTS実API成功**。元MulmoCast字幕とともにMP4に合成: [実行44328838598](https://github.com/ToramaruA/sns-video-factory/actions/runs/44328838598) | Free Tier登録の確認が必要。音声の品質や尺の最適化は後回し |
+| 動画・音声・字幕の一括制作 | **二段階の固定サンプル**で完成。音声付き動画の実生成確認済み | 最初から同一MulmoScriptで3本のWanとTTSを一度に作る経路は未実装。現在の無料ガードはWan使用時に `suppressSpeech: true` を要求する |
+
+この試作成功だけで、無制限無料・商用利用可能・どんな企画にも対応する完成品と判定してはいけません。無料以外への自動切替は禁止し、まず元MulmoCastの一括経路を完成させます。
+
+---
+
+
 対象: 公式MulmoCastコミット `c410d188536cfe4150a12c47c2a767525b9100ed` を起点にした `restart/mulmocast-upstream-free-ai`。
 
 **基本方針:** 元の `mulmo tool scripting` / MulmoScript / `mulmo movie` / 画像参照 / 既存素材入力 / 音声 / 字幕 / 結合をそのまま使用する。独自の制作ワークフローは追加しない。
