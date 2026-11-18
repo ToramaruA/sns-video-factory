@@ -1,0 +1,31 @@
+name: SNS Video Factory - minimal browser controller (OFFLINE)
+
+on:
+  pull_request:
+    paths:
+      - 'scripts/sns-video-browser.*'
+      - 'test/sns_video/test_sns_video_browser.mjs'
+      - 'docs/sns-video/BROWSER_MINIMAL.md'
+      - '.github/workflows/sns-video-browser-offline.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/sns-video-browser.*'
+      - 'test/sns_video/test_sns_video_browser.mjs'
+      - 'docs/sns-video/BROWSER_MINIMAL.md'
+      - '.github/workflows/sns-video-browser-offline.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  browser-offline-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Test browser entry without any free or paid AI API calls
+        run: node --test test/sns_video/test_sns_video_browser.mjs
