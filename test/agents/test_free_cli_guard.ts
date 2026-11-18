@@ -174,3 +174,47 @@ test("three existing Wan clips with Gemini Free TTS pass the original MulmoCast 
     assert.throws(() => assertSnsFreeMode(ctx, "movie"), /Gemini API project/);
   });
 });
+
+test("one MulmoScript can generate THREE Wan clips with Gemini narration and captions, but only after all opt-ins", () => {
+  const oldExperiment = process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT;
+  const oldConsent = process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT;
+  const oldMax = process.env.SNS_VIDEO_MAX_WAN_I2V_REQUESTS;
+  try {
+    withFreeMode(() => {
+      const example = JSON.parse(readFileSync("docs/sns-video/examples/experimental-three-cut-onepass-narrated.json", "utf8"));
+      const ctx = makeContext(example.beats, example);
+      process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT = "1";
+      process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT = "1";
+      process.env.SNS_VIDEO_MAX_WAN_I2V_REQUESTS = "3";
+      assert.equal(ctx.studio.script.audioParams.suppressSpeech, false);
+      assert.equal(ctx.studio.script.captionParams?.lang, "ja");
+      assert.equal(ctx.studio.script.beats.filter((beat) => beat.moviePrompt).length, 3);
+      assert.doesNotThrow(() => assertSnsFreeMode(ctx, "movie"));
+
+      delete process.env.SNS_VIDEO_GEMINI_TTS_FREE_CONFIRMED;
+      assert.throws(() => assertSnsFreeMode(ctx, "movie"), /Gemini API project/);
+      process.env.SNS_VIDEO_GEMINI_TTS_FREE_CONFIRMED = "1";
+
+      delete process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT;
+      assert.throws(() => assertSnsFreeMode(ctx, "movie"), /movie/);
+      process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT = "1";
+
+      process.env.SNS_VIDEO_MAX_WAN_I2V_REQUESTS = "1";
+      assert.throws(() => assertSnsFreeMode(ctx, "movie"), /movie/);
+      process.env.SNS_VIDEO_MAX_WAN_I2V_REQUESTS = "3";
+
+      const paidVoice = makeContext(example.beats, {
+        ...example,
+        speechParams: { speakers: { Presenter: { provider: "openai", voiceId: "shimmer" } } },
+      });
+      assert.throws(() => assertSnsFreeMode(paidVoice, "movie"), /speech model/);
+    });
+  } finally {
+    if (oldExperiment === undefined) delete process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT;
+    else process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT = oldExperiment;
+    if (oldConsent === undefined) delete process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT;
+    else process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT = oldConsent;
+    if (oldMax === undefined) delete process.env.SNS_VIDEO_MAX_WAN_I2V_REQUESTS;
+    else process.env.SNS_VIDEO_MAX_WAN_I2V_REQUESTS = oldMax;
+  }
+});
