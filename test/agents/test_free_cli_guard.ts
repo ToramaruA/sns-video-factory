@@ -106,6 +106,7 @@ test("original MulmoCast remains unchanged without explicit free-only opt-in", (
 test("Wan prototype only permits the single moving cut with both opt-ins", () => {
   const oldExperiment = process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT;
   const oldConsent = process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT;
+  const oldMaximum = process.env.SNS_VIDEO_MAX_WAN_I2V_REQUESTS;
   const movieParams = {
     provider: "wan22_trial",
     model: "wan2.2-i2v",
@@ -134,6 +135,13 @@ test("Wan prototype only permits the single moving cut with both opt-ins", () =>
       const tooMany = makeContext([beat, beat], { movieParams, audioParams: { suppressSpeech: true } });
       assert.throws(() => assertSnsFreeMode(tooMany, "movie"), /movie/);
 
+      process.env.SNS_VIDEO_MAX_WAN_I2V_REQUESTS = "3";
+      const allMoving = makeContext([beat, beat, beat], { movieParams, audioParams: { suppressSpeech: true } });
+      assert.doesNotThrow(() => assertSnsFreeMode(allMoving, "movie"));
+
+      const fourMoving = makeContext([beat, beat, beat, beat], { movieParams, audioParams: { suppressSpeech: true } });
+      assert.throws(() => assertSnsFreeMode(fourMoving, "movie"), /movie/);
+
       const paidMovie = makeContext([beat], {
         movieParams: { provider: "google" },
         audioParams: { suppressSpeech: true },
@@ -145,5 +153,7 @@ test("Wan prototype only permits the single moving cut with both opt-ins", () =>
     else process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT = oldExperiment;
     if (oldConsent === undefined) delete process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT;
     else process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT = oldConsent;
+    if (oldMaximum === undefined) delete process.env.SNS_VIDEO_MAX_WAN_I2V_REQUESTS;
+    else process.env.SNS_VIDEO_MAX_WAN_I2V_REQUESTS = oldMaximum;
   }
 });
