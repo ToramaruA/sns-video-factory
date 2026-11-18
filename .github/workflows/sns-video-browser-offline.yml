@@ -5,6 +5,8 @@ on:
     paths:
       - 'scripts/sns-video-browser.*'
       - 'scripts/test-sns-video-browser.mjs'
+      - 'scripts/test-sns-video-browser-real-mp4.mjs'
+      - 'experiments/04-offline-e2e/**'
       - 'docs/sns-video/BROWSER_MINIMAL.md'
       - '.github/workflows/sns-video-browser-offline.yml'
   push:
@@ -29,3 +31,33 @@ jobs:
           node-version: '24'
       - name: Test browser entry without any free or paid AI API calls
         run: node --test scripts/test-sns-video-browser.mjs
+
+  browser-real-mp4-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      GROQ_API_KEY: ''
+      LLM_GROQ_API_KEY: ''
+      OPENAI_API_KEY: ''
+      LLM_OPENAI_API_KEY: ''
+      CLOUDFLARE_ACCOUNT_ID: ''
+      CLOUDFLARE_API_TOKEN: ''
+      SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT: '0'
+      SNS_VIDEO_GROQ_FREE_PLAN_CONFIRMED: '0'
+      SNS_VIDEO_CLOUDFLARE_FREE_PLAN_CONFIRMED: '0'
+      MULMO_STRICT_NETWORK: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install original MulmoCast and FFmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          npm install -g yarn@1.22.22
+          yarn install --frozen-lockfile
+          yarn build
+      - name: Browser HTTP to original GraphAI mock / MulmoCast CLI / real MP4 download
+        run: node --test scripts/test-sns-video-browser-real-mp4.mjs
+
