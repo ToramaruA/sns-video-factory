@@ -22,6 +22,20 @@
 
 共有するのはブラウザURLと画面用アクセスキーで、Groq・CloudflareのAPIキーはサーバーだけに置きます。無料APIの利用枠はホスト管理者のアカウントで**共有**され、利用者人数が増えても枠は増えません。1本ずつ順番に生成します（処理中の別リクエストは拒否）。過去10件の完成物だけをサーバー内で扱い、保存先は output/sns-video-browser/ です。
 
+## 実APIで1本だけブラウザ経由の動画を確認する（手動・無料枠のみ）
+
+本番のGroq/Cloudflareを使う検証経路は**すでに実装済み**です。APIを消費するため、プッシュ時・PR時の自動テストでは実行しません。
+
+1. Groqの組織が**Free Plan**、Cloudflare Workersのアカウントが**Free**であることを管理画面で確認する。両者の有料Tierに移行していないことを確認する。
+2. リポジトリの[Actions: Free MulmoCast](https://github.com/ToramaruA/sns-video-factory/actions/workflows/sns-video-groq-flux-three-cut-manual.yml)を開き、**Run workflow** を押す。
+3. `brief`に短い日本語の動画依頼を入力、**verify_browser_api をON**。最初は **enable_free_japanese_voice はOFF**（音声無しで接続を切り分ける）。
+4. **confirm_groq_free_plan と confirm_cloudflare_free_plan をON**。両アカウントの無料契約を確認していない場合はONにしない。
+5. 実行が成功したら、同RunのArtifactsにある`free-mulmocast-portrait-still-video`を開き、MP4とMulmoScriptを確認する。
+
+`verify_browser_api`をONにすると、GitHub Runner内に一時的なlocalhostブラウザAPIを立て、**1回だけ**実際のGroq → FLUX → 既存MulmoCast → HTTP経由のMP4ダウンロードを検証します。**通常の生成経路と二重には実行しません**。APIキーはGitHub Actions Secretsを使用し、利用者のブラウザには公開しません。コストが発生する可能性のある有料プランからの実行は認めません。
+
+この検証はGitHub上のRunner内です。**実際に他の人がネット越しにアクセスできること、無料APIの継続利用、動くAI動画（I2V）、音声品質を証明するものではありません。** 実行したら成功/失敗のRun URLから次の原因調査へ進めます。
+
 ## 制限と検証範囲
 
 - API料金不明なら停止します。有料AIへの自動フォールバックはありません。Freeプランの確認はサーバー管理者による申告であり、契約をAPIから検証しているわけではありません。
@@ -29,6 +43,6 @@
 - APIキーはブラウザに渡しません。画面用アクセスキーはWebストレージに保存しません。
 - API認証・二重起動防止・エラー非漏洩のテスト：`node --test scripts/test-sns-video-browser.mjs`（API無し・ダミー出力）。
 - **実際のMulmoCastレンダラーを通すオフライン結合テスト**：`node --test scripts/test-sns-video-browser-real-mp4.mjs`（`yarn build`とFFmpegが必要）。ブラウザHTTPで動画作成を依頼し、元MulmoCastの既存GraphAIモック企画→既存画像処理→720×1280の実MP4→認証付きHTTPダウンロードを確認します。外部LLM・画像・動画APIは使いません。
-- **実際のGroq・Cloudflare・VOICEVOX Nemoによるブラウザからの動画生成は未検証**です。既存の手動GitHub Actionsで `verify_browser_api` をONにすると、秘密のAPIキーを使って**GitHub Runner内だけのブラウザHTTPから実MP4までの1回の実APIテスト**を実施できます。Groq/Cloudflareのアカウントが実際にFree Planであることを確認してから実行してください。画像を2回生成しないよう通常経路と分岐します。実行はまだ行っていません。
+- **実際のGroq・Cloudflare・VOICEVOX Nemoによるブラウザからの動画生成は未検証**です。既存の手動GitHub Actionsで `verify_browser_api` をONにすると、秘密のAPIキーを使って**GitHub Runner内だけのブラウザHTTPから実MP4までの1回の実APIテスト**を実施できます。Groq/Cloudflareのアカウントが実際にFree Planであることを確認してから実行してください。画像を2回生成しないよう通常経路と分岐します。このブラウザ経由の実API検証が成功したという記録は、まだ確認できていません。
 - 手動実API検証スクリプト：`node scripts/verify-sns-video-browser-live.mjs`。**CIでは静的構文チェックだけ実施**し、Pull Requestやpush時に実APIを呼びません。
 - 別端末からのHTTPSアクセスや常時運用するサーバーの信頼性は未検証です。GitHub Runner内のHTTP検証成功だけで一般公開可能とは判断しません。
