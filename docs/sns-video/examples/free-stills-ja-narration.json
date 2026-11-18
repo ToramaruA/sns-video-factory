@@ -1,0 +1,35 @@
+{
+  "$mulmocast": { "version": "1.1" },
+  "title": "SNS動画：室内楽コンサート",
+  "lang": "ja",
+  "canvasSize": { "width": 720, "height": 1280 },
+  "imageParams": {
+    "provider": "cloudflare_free",
+    "model": "@cf/black-forest-labs/flux-1-schnell",
+    "style": "Cinematic warm lighting, refined concert photography, vertical composition"
+  },
+  "speechParams": {
+    "speakers": {
+      "Presenter": {
+        "provider": "gemini",
+        "model": "gemini-3.8-flash-tts",
+        "voiceId": "Kore"
+      }
+    }
+  },
+  "audioParams": {
+    "suppressSpeech": false
+  },
+  "beats": [
+    {
+      "speaker": "Presenter",
+      "text": "音楽とともに、特別な冬のひとときを。",
+      "imagePrompt": "A grand piano in a warm candlelit chamber music hall, no lettering"
+    },
+    {
+      "speaker": "Presenter",
+      "text": "クラシックとジャズが響き合う、クリスマスの演奏会。",
+      "imagePrompt": "Elegant violin and piano duet on an intimate Christmas concert stage, no lettering"
+    }
+  ]
+}
