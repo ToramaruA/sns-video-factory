@@ -1,8 +1,16 @@
-name: Free MulmoCast - 1カット動く試作（手動のみ）
+name: Free MulmoCast - 3カット動画試作（手動のみ）
 
 on:
   workflow_dispatch:
     inputs:
+      render_mode:
+        description: 'Choose 3 cuts (1 Wan moving + 2 stills), or the earlier 1 moving cut.'
+        type: choice
+        required: true
+        default: three_cut
+        options:
+          - three_cut
+          - one_cut
       confirm_cloudflare_free_plan:
         description: 'I verified Cloudflare Workers is FREE, not Paid.'
         type: boolean
@@ -37,6 +45,7 @@ jobs:
       SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT: '1'
       SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT: '1'
       SNS_VIDEO_PYTHON_BINARY: ${{ github.workspace }}/.venv/bin/python
+      RENDER_MODE: ${{ inputs.render_mode }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       OPENAI_API_KEY: ''
@@ -69,23 +78,44 @@ jobs:
           yarn build
           python3 -m venv .venv
           .venv/bin/python -m pip install --disable-pip-version-check gradio_client==2.7.2
-      - name: Original MulmoCast generates one still then one Wan moving clip then MP4
+      - name: Original MulmoCast renders three beats, with exactly one Wan movie generation
         run: |
-          node lib/cli/bin.js movie docs/sns-video/examples/experimental-one-moving-cut.json
-          video=output/experimental-one-moving-cut_ja.mp4
+          case "$RENDER_MODE" in
+            three_cut) name=experimental-three-cut-one-moving ;;
+            one_cut) name=experimental-one-moving-cut ;;
+            *) echo "Unknown mode" >&2; exit 1 ;;
+          esac
+          script="docs/sns-video/examples/${name}.json"
+          python3 - "$script" "$RENDER_MODE" <<'PY'
+          import json, sys
+          script = json.load(open(sys.argv[1], encoding='utf-8'))
+          expected = 3 if sys.argv[2] == 'three_cut' else 1
+          assert len(script['beats']) == expected
+          assert sum(bool(b.get('moviePrompt')) for b in script['beats']) == 1
+          PY
+          node lib/cli/bin.js movie "$script"
+          video="output/${name}_ja.mp4"
           test -s "$video"
           dimensions="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$video")"
           test "$dimensions" = "720x1280"
+          if [ "$RENDER_MODE" = three_cut ]; then
+            test -s "output/images/${name}/0p.png"
+            test -s "output/images/${name}/1.mov"
+            test -s "output/images/${name}/2p.png"
+            test "$(find "output/images/${name}" -maxdepth 1 -name '*.mov' | wc -l)" -eq 1
+          fi
           ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video"
-          echo 'PASS: FLUX.2 still -> Wan 2-second I2V -> original MulmoCast portrait MP4'
-      - name: Save the real moving MP4 and input still
+          echo "PASS: ${RENDER_MODE}, one Wan 2-second clip, all cuts rendered by original MulmoCast"
+      - name: Save the rendered MP4 and all generated frames
         if: success()
         uses: actions/upload-artifact@v4
         with:
-          name: free-mulmocast-one-moving-cut-prototype
+          name: free-mulmocast-one-or-three-cut-prototype
           path: |
             docs/sns-video/examples/experimental-one-moving-cut.json
-            output/experimental-one-moving-cut_ja.mp4
+            docs/sns-video/examples/experimental-three-cut-one-moving.json
+            output/experimental-*_ja.mp4
             output/images/experimental-one-moving-cut/
+            output/images/experimental-three-cut-one-moving/
           if-no-files-found: error
           retention-days: 3
