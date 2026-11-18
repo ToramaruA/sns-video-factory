@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { getAvailablePromptTemplates, readTemplatePrompt } from "../../src/utils/file.js";
 import { assertSnsFreeMode } from "../../src/sns-video/safety/free_cli_guard.js";
 import { MulmoScriptMethods } from "../../src/methods/mulmo_script.js";
 import { createMockContext } from "../actions/utils.js";
@@ -217,4 +218,17 @@ test("one MulmoScript can generate THREE Wan clips with Gemini narration and cap
     if (oldMax === undefined) delete process.env.SNS_VIDEO_MAX_WAN_I2V_REQUESTS;
     else process.env.SNS_VIDEO_MAX_WAN_I2V_REQUESTS = oldMax;
   }
+});
+
+test("native MulmoCast Groq scripting lists the Free SNS template with a valid MulmoScript sample", () => {
+  const available = getAvailablePromptTemplates();
+  assert.ok(available.some((t) => t.filename === "sns_free_vertical"));
+  const prompt = readTemplatePrompt("sns_free_vertical");
+  assert.match(prompt, /wan22_trial/);
+  assert.match(prompt, /cloudflare_free/);
+  assert.match(prompt, /gemini-3.8-flash-tts/);
+  const sample = JSON.parse(readFileSync("scripts/templates/sns_free_vertical_video.json", "utf8"));
+  const ctx = makeContext(sample.beats, sample);
+  assert.equal(ctx.studio.script.beats.length, 3);
+  assert.ok(ctx.studio.script.beats.every((beat) => beat.duration === 2 && beat.moviePrompt && beat.imagePrompt));
 });
