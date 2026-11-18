@@ -122,6 +122,15 @@ jobs:
           test "${#files[@]}" -eq 1 || { echo 'Groq did not write exactly one MulmoScript JSON.' >&2; exit 1; }
           echo "PLAN_FILE=${files[0]}" >> "$GITHUB_ENV"
           echo "PLAN_NAME=$(basename "${files[0]}" .json)" >> "$GITHUB_ENV"
+      - name: Upload generated editable MulmoScript (available even when video rendering is disabled)
+        uses: actions/upload-artifact@v4
+        with:
+          name: free-groq-mulmoscript
+          path: |
+            output/sns-script/brief.txt
+            output/sns-script/sns-plan-*.json
+          if-no-files-found: error
+          retention-days: 5
       - name: Validate generated MulmoScript and reject paid models before MP4
         run: |
           node --input-type=module <<'JS'
@@ -148,15 +157,6 @@ jobs:
           requireSetting(!data.audioParams?.bgm && !data.imageParams?.images && !data.movieParams?.referenceImages, 'no external or paid resources');
           console.log('PASS: Original MulmoScript schema, 3 real I2V beats, Groq->Cloudflare/Wan/Gemini Free settings');
           JS
-      - name: Upload generated editable MulmoScript (available even when video rendering is disabled)
-        uses: actions/upload-artifact@v4
-        with:
-          name: free-groq-mulmoscript
-          path: |
-            output/sns-script/brief.txt
-            output/sns-script/sns-plan-*.json
-          if-no-files-found: error
-          retention-days: 5
       - uses: actions/setup-python@v5
         if: inputs.render_movie == true
         with:
