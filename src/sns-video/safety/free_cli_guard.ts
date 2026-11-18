@@ -14,6 +14,26 @@ export const assertSnsFreeMode = (context: MulmoStudioContext, action: FreeActio
   const script = context.studio.script;
   const style = context.presentationStyle;
 
+  // Explicit prototype exception: exactly ONE 2-second Wan demo request. The image is
+  // generated through the existing Cloudflare provider. This is not commercial approval.
+  // Without BOTH separate opt-ins, all moviePrompt generation stays forbidden.
+  const onlyBeat = script.beats.length === 1 ? script.beats[0] : undefined;
+  const demoMovieParams = { ...style.movieParams, ...onlyBeat?.movieParams };
+  const allowWanDemo =
+    action === "movie" &&
+    process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT === "1" &&
+    process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT === "1" &&
+    onlyBeat?.moviePrompt !== undefined &&
+    onlyBeat.duration === 2 &&
+    Boolean(onlyBeat.imagePrompt) &&
+    style.audioParams.suppressSpeech === true &&
+    demoMovieParams.provider === "wan22_trial" &&
+    (demoMovieParams.model ?? "wan2.2-i2v") === "wan2.2-i2v" &&
+    demoMovieParams.firstFrameImageName === "$beatImage" &&
+    !demoMovieParams.lastFrameImageName &&
+    !demoMovieParams.referenceImages?.length &&
+    demoMovieParams.generateAudio !== true;
+
   if (MulmoStudioContextMethods.needTranslate(context, action === "movie")) {
     throw new Error("Free-only mode: translation uses an unverified LLM; use matching script/output languages");
   }
@@ -34,7 +54,7 @@ export const assertSnsFreeMode = (context: MulmoStudioContext, action: FreeActio
   for (const [index, beat] of script.beats.entries()) {
     const label = `Free-only mode, beat ${index + 1}`;
     if (imageGeneration) {
-      if (beat.moviePrompt || beat.enableLipSync || beat.soundEffectPrompt || beat.htmlPrompt) {
+      if ((beat.moviePrompt && !allowWanDemo) || beat.enableLipSync || beat.soundEffectPrompt || beat.htmlPrompt) {
         throw new Error(`${label}: movie, lip sync, sound effect or HTML AI generation is not approved for free use`);
       }
       if (beat.image?.type === "remotion" && "prompt" in beat.image) {
