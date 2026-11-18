@@ -1,0 +1,25 @@
+{
+  "$mulmocast": { "version": "1.1" },
+  "title": "参考写真を直接渡して画像生成",
+  "lang": "ja",
+  "canvasSize": { "width": 720, "height": 1280 },
+  "imageParams": {
+    "provider": "cloudflare_free",
+    "model": "@cf/black-forest-labs/flux-2-klein-4b",
+    "images": {
+      "performer": {
+        "type": "image",
+        "source": { "kind": "path", "path": "./reference.png" }
+      }
+    }
+  },
+  "audioParams": { "suppressSpeech": true },
+  "beats": [
+    {
+      "text": "",
+      "duration": 5,
+      "imageNames": ["performer"],
+      "imagePrompt": "Keep the musician's identity and clothing from image 0. Show them performing on a warm Christmas concert stage, cinematic vertical shot. No text."
+    }
+  ]
+}
