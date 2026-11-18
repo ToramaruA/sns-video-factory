@@ -89,7 +89,7 @@
 
 **P0 — 1本のMulmoScriptから、音声・画像・I2V・字幕・MP4を一括生成できるようにする。**
 
-**実装状況（2026-11-19）:** 同じMulmoScriptにFLUX画像3枚、Wan動画3本、日本語Gemini TTS、字幕の設定を保持する `docs/sns-video/examples/experimental-three-cut-onepass-narrated.json` を追加。Wan実験の最大3回・明示同意とGemini無料枠確認をそれぞれ維持し、`mulmo movie <script>` 1回で処理できるよう無料モードの事前ガードを変更。GitHub Actions `onepass_narrated` を追加（初期選択）。ビルド・型チェック・単体/回帰テスト・LintはCI [44333422547](https://github.com/ToramaruA/sns-video-factory/actions/runs/44333422547) で成功。**一括実API生成は未実行**。成功後にP0完了とする。
+**実装状況（2026-11-19）:** 同じMulmoScriptにFLUX画像3枚、Wan動画3本、日本語Gemini TTS、字幕の設定を保持する `docs/sns-video/examples/experimental-three-cut-onepass-narrated.json` を追加。Wan実験の最大3回・明示同意とGemini無料枠確認をそれぞれ維持し、`mulmo movie <script>` 1回で処理できるよう無料モードの事前ガードを変更。GitHub Actions `onepass_narrated` を追加（初期選択）。ビルド・型チェック・単体/回帰テスト・LintはCI [44333422547](https://github.com/ToramaruA/sns-video-factory/actions/runs/44333422547) で成功。**実API生成はGitHub Actions [44338853334](https://github.com/ToramaruA/sns-video-factory/actions/runs/44338853334) で成功しP0完了**。1回の `mulmo movie` でGemini日本語TTS 3本→Cloudflare画像3枚→Wan動画3本→MulmoCast字幕→音声付き720×1280/30fps MP4（6.006秒）まで実行し、artifact保存も成功。次はP1のGroq無料LLMによる企画からMulmoScript生成・既存movie経路接続。
 
 
 1. いまは無料ガードが「Wanで動画を生成するbeatでは `suppressSpeech: true` が必須」としており、同一MulmoScriptの同一実行でGemini TTSとWanを同時使用できない。無料枠の事前チェックを維持したままこの制限を解く。
