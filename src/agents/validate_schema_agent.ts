@@ -3,7 +3,8 @@ import { type MulmoScript, mulmoScriptSchema } from "../types/index.js";
 
 interface ValidateMulmoScriptInputs {
   text: string;
-  schema: typeof mulmoScriptSchema;
+  schema?: typeof mulmoScriptSchema;
+  schemaName?: "mulmoScript";
 }
 
 interface ValidateMulmoScriptResponse {
@@ -50,13 +51,16 @@ const sanitizedReason = (error: unknown): string => {
 export const validateSchemaAgent: AgentFunction<object, ValidateMulmoScriptResponse, ValidateMulmoScriptInputs, DefaultConfigData> = async ({
   namedInputs,
 }) => {
-  const { text, schema } = namedInputs;
+  const { text, schema, schemaName } = namedInputs;
   try {
-    assert(!!schema, "schema is required");
+    // Zod instances lose their methods when GraphAI serializes nested graphs.
+    // Refer to the imported schema by a plain string for native MulmoCast scripting.
+    const validator = schemaName === "mulmoScript" ? mulmoScriptSchema : schema;
+    assert(!!validator, "schema is required");
     assert(!!text, "text is required");
 
     const jsonData = JSON.parse(extractMulmoJsonText(text));
-    const parsed = schema.parse(jsonData);
+    const parsed = validator.parse(jsonData);
     return {
       isValid: true,
       data: parsed,
