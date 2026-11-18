@@ -25,6 +25,7 @@ import {
   imageCloudflareFluxAgent,
   movieGenAIAgent,
   movieReplicateAgent,
+  movieWan22ZeroGpuAgent,
 } from "../agents/index.js";
 import { agentGenerationError, imageReferenceAction, imageFileTarget, movieFileTarget } from "../utils/error_cause.js";
 
@@ -233,7 +234,7 @@ const generateReferenceMovie = async (inputs: {
 
   try {
     const options = await imageGraphOption(context);
-    const graph = new GraphAI(movie_graph_data, { movieGenAIAgent, movieReplicateAgent, mediaMockAgent }, options);
+    const graph = new GraphAI(movie_graph_data, { movieGenAIAgent, movieReplicateAgent, movieWan22ZeroGpuAgent, mediaMockAgent }, options);
     graph.registerCallback(createUsageCallback(context));
     await graph.run<{ output: MulmoStudioBeat[] }>();
     return moviePath;
