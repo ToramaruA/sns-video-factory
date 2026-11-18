@@ -138,6 +138,11 @@ jobs:
           fi
           ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video"
           echo "PASS: ${RENDER_MODE} rendered by original MulmoCast, with no paid video APIs"
+      - name: Install the browser needed by original MulmoCast captions
+        if: inputs.render_mode == 'narrated_from_artifact'
+        run: |
+          sudo apt-get install -y fonts-noto-cjk
+          ./node_modules/.bin/puppeteer browsers install chrome
       - name: Download saved moving cuts (not another Wan/FLUX request)
         if: inputs.render_mode == 'narrated_from_artifact'
         uses: actions/download-artifact@v4
