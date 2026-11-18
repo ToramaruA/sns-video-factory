@@ -1,14 +1,15 @@
-name: Free MulmoCast - 3カット完成版（日本語音声付き）
+name: Free MulmoCast - 3カット一括生成（画像・動画・音声・字幕）
 
 on:
   workflow_dispatch:
     inputs:
       render_mode:
-        description: 'narrated_from_artifact: add voice to saved 3 movies; other options create new movies.'
+        description: 'onepass_narrated: generate all visuals and Japanese speech at once; other options are prior experiments.'
         type: choice
         required: true
-        default: narrated_from_artifact
+        default: onepass_narrated
         options:
+          - onepass_narrated
           - narrated_from_artifact
           - three_all_moving
           - three_cut
@@ -49,7 +50,7 @@ concurrency:
 
 jobs:
   render-beats:
-    if: (inputs.render_mode == 'narrated_from_artifact' && inputs.confirm_gemini_free_tier == true) || (inputs.render_mode != 'narrated_from_artifact' && inputs.confirm_cloudflare_free_plan == true && inputs.confirm_zerogpu_trial == true && inputs.confirm_third_party_demo_upload == true)
+    if: (inputs.render_mode == 'narrated_from_artifact' && inputs.confirm_gemini_free_tier == true) || (inputs.render_mode != 'narrated_from_artifact' && inputs.confirm_cloudflare_free_plan == true && inputs.confirm_zerogpu_trial == true && inputs.confirm_third_party_demo_upload == true && (inputs.render_mode != 'onepass_narrated' || inputs.confirm_gemini_free_tier == true))
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -60,7 +61,7 @@ jobs:
       SNS_VIDEO_GEMINI_TTS_FREE_CONFIRMED: ${{ inputs.confirm_gemini_free_tier && '1' || '0' }}
       SNS_VIDEO_PYTHON_BINARY: ${{ github.workspace }}/.venv/bin/python
       RENDER_MODE: ${{ inputs.render_mode }}
-      SNS_VIDEO_MAX_WAN_I2V_REQUESTS: ${{ inputs.render_mode == 'three_all_moving' && '3' || '1' }}
+      SNS_VIDEO_MAX_WAN_I2V_REQUESTS: ${{ (inputs.render_mode == 'three_all_moving' || inputs.render_mode == 'onepass_narrated') && '3' || '1' }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
@@ -74,10 +75,11 @@ jobs:
       - uses: actions/checkout@v4
       - name: Verify selected Free Tier and credentials BEFORE running MulmoCast
         run: |
-          if [ "$RENDER_MODE" = narrated_from_artifact ]; then
+          if [ "$RENDER_MODE" = narrated_from_artifact ] || [ "$RENDER_MODE" = onepass_narrated ]; then
             test "$SNS_VIDEO_GEMINI_TTS_FREE_CONFIRMED" = 1 || { echo 'Gemini Free Tier confirmation required' >&2; exit 1; }
             test -n "$GEMINI_API_KEY" || { echo 'Missing repository secret GEMINI_API_KEY for the Gemini Free Tier project' >&2; exit 1; }
-          else
+          fi
+          if [ "$RENDER_MODE" != narrated_from_artifact ]; then
             test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo 'Missing Cloudflare Account ID' >&2; exit 1; }
             test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing Cloudflare API token' >&2; exit 1; }
           fi
@@ -108,6 +110,7 @@ jobs:
           case "$RENDER_MODE" in
             three_cut) name=experimental-three-cut-one-moving ;;
             three_all_moving) name=experimental-three-cut-all-moving ;;
+            onepass_narrated) name=experimental-three-cut-onepass-narrated ;;
             one_cut) name=experimental-one-moving-cut ;;
             *) echo "Unknown mode" >&2; exit 1 ;;
           esac
@@ -116,12 +119,21 @@ jobs:
           import json, sys
           script = json.load(open(sys.argv[1], encoding='utf-8'))
           expected = 1 if sys.argv[2] == 'one_cut' else 3
-          expected_movies = 3 if sys.argv[2] == 'three_all_moving' else 1
+          expected_movies = 3 if sys.argv[2] in ('three_all_moving', 'onepass_narrated') else 1
           assert len(script['beats']) == expected
           assert sum(bool(b.get('moviePrompt')) for b in script['beats']) == expected_movies
+          if sys.argv[2] == 'onepass_narrated':
+              assert script['audioParams']['suppressSpeech'] is False
+              assert script['captionParams']['lang'] == 'ja'
+              assert all(beat['text'] and beat['speaker'] == 'Presenter' for beat in script['beats'])
+              assert all(s['provider'] == 'gemini' and s['model'] == 'gemini-3.8-flash-tts' for s in script['speechParams']['speakers'].values())
           PY
           node lib/cli/bin.js movie "$script"
-          video="output/${name}_ja.mp4"
+          if [ "$RENDER_MODE" = onepass_narrated ]; then
+            video="output/${name}_ja__ja.mp4"
+          else
+            video="output/${name}_ja.mp4"
+          fi
           test -s "$video"
           dimensions="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$video")"
           test "$dimensions" = "720x1280"
@@ -130,16 +142,20 @@ jobs:
             test -s "output/images/${name}/1.mov"
             test -s "output/images/${name}/2p.png"
             test "$(find "output/images/${name}" -maxdepth 1 -name '*.mov' | wc -l)" -eq 1
-          elif [ "$RENDER_MODE" = three_all_moving ]; then
+          elif [ "$RENDER_MODE" = three_all_moving ] || [ "$RENDER_MODE" = onepass_narrated ]; then
             for idx in 0 1 2; do
               test -s "output/images/${name}/${idx}.mov"
             done
             test "$(find "output/images/${name}" -maxdepth 1 -name '*.mov' | wc -l)" -eq 3
           fi
+          if [ "$RENDER_MODE" = onepass_narrated ]; then
+            audio_codec="$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$video")"
+            test -n "$audio_codec" || { echo 'Japanese narration audio track missing' >&2; exit 1; }
+          fi
           ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video"
           echo "PASS: ${RENDER_MODE} rendered by original MulmoCast, with no paid video APIs"
       - name: Install the browser needed by original MulmoCast captions
-        if: inputs.render_mode == 'narrated_from_artifact'
+        if: inputs.render_mode == 'narrated_from_artifact' || inputs.render_mode == 'onepass_narrated'
         run: |
           sudo apt-get install -y fonts-noto-cjk
           ./node_modules/.bin/puppeteer browsers install chrome
@@ -198,14 +214,17 @@ jobs:
         if: success() && inputs.render_mode != 'narrated_from_artifact'
         uses: actions/upload-artifact@v4
         with:
-          name: free-mulmocast-one-or-three-cut-prototype
+          name: ${{ inputs.render_mode == 'onepass_narrated' && 'free-mulmocast-onepass-voice-video' || 'free-mulmocast-one-or-three-cut-prototype' }}
           path: |
             docs/sns-video/examples/experimental-one-moving-cut.json
             docs/sns-video/examples/experimental-three-cut-one-moving.json
             docs/sns-video/examples/experimental-three-cut-all-moving.json
+            docs/sns-video/examples/experimental-three-cut-onepass-narrated.json
             output/experimental-*_ja.mp4
+            output/experimental-*_ja__ja.mp4
             output/images/experimental-one-moving-cut/
             output/images/experimental-three-cut-one-moving/
             output/images/experimental-three-cut-all-moving/
+            output/images/experimental-three-cut-onepass-narrated/
           if-no-files-found: error
           retention-days: 3
