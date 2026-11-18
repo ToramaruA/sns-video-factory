@@ -110,7 +110,10 @@ const callPythonBridge = async (script: string, request: unknown, workingDir: st
   });
 };
 
+// Manual demo only: count requests for the entire Node process and serialize them.
 let startedCalls = 0;
+let nextWanRequest: Promise<void> = Promise.resolve();
+let previousWanRequestFailed = false;
 
 /** Return a buffer for MulmoCast's existing movie cache and final render logic. */
 export const movieWan22ZeroGpuAgent: AgentFunction<GoogleMovieAgentParams, AgentBufferResult, MovieAgentInputs, Record<string, never>> = async ({
@@ -133,8 +136,9 @@ export const movieWan22ZeroGpuAgent: AgentFunction<GoogleMovieAgentParams, Agent
   if (process.env.HF_TOKEN || process.env.HUGGING_FACE_HUB_TOKEN) {
     throw new Error("Wan2.2 experimental adapter only permits anonymous free access; remove Hugging Face tokens");
   }
-  if (startedCalls >= 1) {
-    throw new Error("Wan2.2 experiment permits only one generation per process; no automatic repeated calls");
+  const maxCalls = process.env.SNS_VIDEO_MAX_WAN_I2V_REQUESTS === "3" ? 3 : 1;
+  if (startedCalls >= maxCalls) {
+    throw new Error(`Wan2.2 experiment is limited to ${maxCalls} generation requests per process; no retries`);
   }
   if (!imagePath) {
     throw new Error("Wan2.2 image-to-video requires a still image");
@@ -146,8 +150,29 @@ export const movieWan22ZeroGpuAgent: AgentFunction<GoogleMovieAgentParams, Agent
   if (!inputFile.isFile() || inputFile.size > 15_000_000) {
     throw new Error("Wan2.2 image file must exist and be <= 15 MB");
   }
-  // Only increment after all local validations; never retry automatically.
+  // Reserve before any remote call. GraphAI may schedule multiple beats in parallel,
+  // but a shared anonymous ZeroGPU pool must receive them one at a time.
   startedCalls += 1;
+  const previous = nextWanRequest;
+  let release!: () => void;
+  nextWanRequest = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  await previous;
+  try {
+    if (previousWanRequestFailed) {
+      throw new Error("A previous Wan request failed; later demo submissions have been cancelled");
+    }
+    return await runOneWanDemo(namedInputs.imagePath!, namedInputs.prompt!, requestedDuration);
+  } catch (error) {
+    previousWanRequestFailed = true;
+    throw error;
+  } finally {
+    release();
+  }
+};
+
+const runOneWanDemo = async (imagePath: string, prompt: string, requestedDuration: number): Promise<AgentBufferResult> => {
   const workingDir = await mkdtemp(join(tmpdir(), "sns-video-wan22-"));
   const outputFile = join(workingDir, "generated.mp4");
   try {
@@ -157,7 +182,7 @@ export const movieWan22ZeroGpuAgent: AgentFunction<GoogleMovieAgentParams, Agent
       {
         image_path: imagePath,
         output_path: outputFile,
-        prompt: namedInputs.prompt,
+        prompt,
         model: WAN22_FREE_MODEL,
         duration_seconds: requestedDuration,
       },
@@ -190,7 +215,7 @@ const movieWan22ZeroGpuAgentInfo: AgentFunctionInfo = {
   author: "SNS Video Factory contributors",
   repository: "https://github.com/ToramaruA/sns-video-factory",
   license: "AGPL-3.0-only",
-  environmentVariables: ["SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT", "SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT"],
+  environmentVariables: ["SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT", "SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT", "SNS_VIDEO_MAX_WAN_I2V_REQUESTS"],
 };
 
 export default movieWan22ZeroGpuAgentInfo;
