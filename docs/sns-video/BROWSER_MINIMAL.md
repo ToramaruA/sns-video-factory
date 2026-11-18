@@ -27,5 +27,6 @@
 - API料金不明なら停止します。有料AIへの自動フォールバックはありません。Freeプランの確認はサーバー管理者による申告であり、契約をAPIから検証しているわけではありません。
 - サーバーは1プロセス運用。公開Webサービス、ログイン画面、ジョブDB、永続履歴、ブラウザ内の台本編集は未完成です。
 - APIキーはブラウザに渡しません。画面用アクセスキーはWebストレージに保存しません。
-- テストは node --test scripts/test-sns-video-browser.mjs 。外部AIキーを使わず認証、重複生成拒否、進捗、MP4ダウンロード、失敗時の秘密情報非公開を検証します。
+- API認証・二重起動防止・エラー非漏洩のテスト：`node --test scripts/test-sns-video-browser.mjs`（API無し・ダミー出力）。
+- **実際のMulmoCastレンダラーを通すオフライン結合テスト**：`node --test scripts/test-sns-video-browser-real-mp4.mjs`（`yarn build`とFFmpegが必要）。ブラウザHTTPで動画作成を依頼し、元MulmoCastの既存GraphAIモック企画→既存画像処理→720×1280の実MP4→認証付きHTTPダウンロードを確認します。外部LLM・画像・動画APIは使いません。
 - **実際のGroq・Cloudflare・VOICEVOX Nemoによるブラウザからの動画生成は未検証**です。まず小規模なMVPとしてホスト環境を整えた上で実生成を確認します。
