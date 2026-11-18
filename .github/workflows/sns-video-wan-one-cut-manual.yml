@@ -1,0 +1,91 @@
+name: Free MulmoCast - 1カット動く試作（手動のみ）
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_cloudflare_free_plan:
+        description: 'I verified Cloudflare Workers is FREE, not Paid.'
+        type: boolean
+        required: true
+        default: false
+      confirm_zerogpu_trial:
+        description: 'I agree this is only an anonymous ZeroGPU demo experiment, NOT a production or commercial route.'
+        type: boolean
+        required: true
+        default: false
+      confirm_third_party_demo_upload:
+        description: 'I agree to submit ONE generated non-private robot image to a third-party public Hugging Face Space.'
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sns-one-moving-cut-restart-prototype
+  cancel-in-progress: false
+
+jobs:
+  single-moving-cut:
+    if: inputs.confirm_cloudflare_free_plan == true && inputs.confirm_zerogpu_trial == true && inputs.confirm_third_party_demo_upload == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      SNS_VIDEO_FREE_ONLY: '1'
+      SNS_VIDEO_CLOUDFLARE_FREE_PLAN_CONFIRMED: '1'
+      SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT: '1'
+      SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT: '1'
+      SNS_VIDEO_PYTHON_BINARY: ${{ github.workspace }}/.venv/bin/python
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      OPENAI_API_KEY: ''
+      GEMINI_API_KEY: ''
+      REPLICATE_API_TOKEN: ''
+      ELEVENLABS_API_KEY: ''
+      HF_TOKEN: ''
+      HUGGING_FACE_HUB_TOKEN: ''
+      HF_HUB_DISABLE_IMPLICIT_TOKEN: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require Free-plan credentials before any API call
+        run: |
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo 'Missing Cloudflare Account ID' >&2; exit 1; }
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing Cloudflare API token' >&2; exit 1; }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: yarn
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install original MulmoCast and the existing Wan demonstration bridge
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          yarn install --frozen-lockfile
+          yarn build
+          python3 -m venv .venv
+          .venv/bin/python -m pip install --disable-pip-version-check gradio_client==2.7.2
+      - name: Original MulmoCast generates one still then one Wan moving clip then MP4
+        run: |
+          node lib/cli/bin.js movie docs/sns-video/examples/experimental-one-moving-cut.json
+          video=output/experimental-one-moving-cut_ja.mp4
+          test -s "$video"
+          dimensions="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$video")"
+          test "$dimensions" = "720x1280"
+          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video"
+          echo 'PASS: FLUX.2 still -> Wan 2-second I2V -> original MulmoCast portrait MP4'
+      - name: Save the real moving MP4 and input still
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: free-mulmocast-one-moving-cut-prototype
+          path: |
+            docs/sns-video/examples/experimental-one-moving-cut.json
+            output/experimental-one-moving-cut_ja.mp4
+            output/images/experimental-one-moving-cut/
+          if-no-files-found: error
+          retention-days: 3
