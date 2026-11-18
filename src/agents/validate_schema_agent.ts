@@ -18,7 +18,7 @@ interface ValidateMulmoScriptResponse {
  * Do not try to repair invalid objects or silently alter provider/beat fields.
  */
 export const extractMulmoJsonText = (response: string): string => {
-  const match = response.match(/```(?:json)?\\s*\\r?\\n([\\s\\S]*?)\\r?\\n```/i);
+  const match = response.match(/```(?:json)?\s*\r?\n([\s\S]*?)\r?\n```/i);
   return (match?.[1] ?? response).trim();
 };
 
