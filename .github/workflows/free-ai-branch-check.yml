@@ -1,0 +1,26 @@
+name: Free AI adapter check (restart branch)
+on:
+  push:
+    branches:
+      - restart/mulmocast-upstream-free-ai
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: yarn
+      - name: Install dependencies without browser downloads
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+        run: yarn install --frozen-lockfile
+      - name: Build original MulmoCast
+        run: yarn build
+      - name: Typecheck tests
+        run: yarn typecheck:test
+      - name: Targeted free-AI image tests (offline)
+        run: ./node_modules/.bin/tsx --test test/agents/test_image_cloudflare_flux_free.ts
