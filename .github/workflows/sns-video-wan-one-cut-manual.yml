@@ -4,12 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       render_mode:
-        description: 'Choose 3 cuts (1 Wan moving + 2 stills), or the earlier 1 moving cut.'
+        description: 'three_cut: 1 moving; three_all_moving: 3 moving; one_cut: 1 moving.'
         type: choice
         required: true
         default: three_cut
         options:
           - three_cut
+          - three_all_moving
           - one_cut
       confirm_cloudflare_free_plan:
         description: 'I verified Cloudflare Workers is FREE, not Paid.'
@@ -22,7 +23,7 @@ on:
         required: true
         default: false
       confirm_third_party_demo_upload:
-        description: 'I agree to submit ONE generated non-private robot image to a third-party public Hugging Face Space.'
+        description: 'I agree to send up to THREE generated non-private images to a public Hugging Face demo (depending on render_mode).'
         type: boolean
         required: true
         default: false
@@ -38,7 +39,7 @@ jobs:
   single-moving-cut:
     if: inputs.confirm_cloudflare_free_plan == true && inputs.confirm_zerogpu_trial == true && inputs.confirm_third_party_demo_upload == true
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     env:
       SNS_VIDEO_FREE_ONLY: '1'
       SNS_VIDEO_CLOUDFLARE_FREE_PLAN_CONFIRMED: '1'
@@ -46,6 +47,7 @@ jobs:
       SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT: '1'
       SNS_VIDEO_PYTHON_BINARY: ${{ github.workspace }}/.venv/bin/python
       RENDER_MODE: ${{ inputs.render_mode }}
+      SNS_VIDEO_MAX_WAN_I2V_REQUESTS: ${{ inputs.render_mode == 'three_all_moving' && '3' || '1' }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       OPENAI_API_KEY: ''
@@ -82,6 +84,7 @@ jobs:
         run: |
           case "$RENDER_MODE" in
             three_cut) name=experimental-three-cut-one-moving ;;
+            three_all_moving) name=experimental-three-cut-all-moving ;;
             one_cut) name=experimental-one-moving-cut ;;
             *) echo "Unknown mode" >&2; exit 1 ;;
           esac
@@ -89,9 +92,10 @@ jobs:
           python3 - "$script" "$RENDER_MODE" <<'PY'
           import json, sys
           script = json.load(open(sys.argv[1], encoding='utf-8'))
-          expected = 3 if sys.argv[2] == 'three_cut' else 1
+          expected = 1 if sys.argv[2] == 'one_cut' else 3
+          expected_movies = 3 if sys.argv[2] == 'three_all_moving' else 1
           assert len(script['beats']) == expected
-          assert sum(bool(b.get('moviePrompt')) for b in script['beats']) == 1
+          assert sum(bool(b.get('moviePrompt')) for b in script['beats']) == expected_movies
           PY
           node lib/cli/bin.js movie "$script"
           video="output/${name}_ja.mp4"
@@ -103,9 +107,14 @@ jobs:
             test -s "output/images/${name}/1.mov"
             test -s "output/images/${name}/2p.png"
             test "$(find "output/images/${name}" -maxdepth 1 -name '*.mov' | wc -l)" -eq 1
+          elif [ "$RENDER_MODE" = three_all_moving ]; then
+            for idx in 0 1 2; do
+              test -s "output/images/${name}/${idx}.mov"
+            done
+            test "$(find "output/images/${name}" -maxdepth 1 -name '*.mov' | wc -l)" -eq 3
           fi
           ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video"
-          echo "PASS: ${RENDER_MODE}, one Wan 2-second clip, all cuts rendered by original MulmoCast"
+          echo "PASS: ${RENDER_MODE} rendered by original MulmoCast, with no paid video APIs"
       - name: Save the rendered MP4 and all generated frames
         if: success()
         uses: actions/upload-artifact@v4
@@ -114,8 +123,10 @@ jobs:
           path: |
             docs/sns-video/examples/experimental-one-moving-cut.json
             docs/sns-video/examples/experimental-three-cut-one-moving.json
+            docs/sns-video/examples/experimental-three-cut-all-moving.json
             output/experimental-*_ja.mp4
             output/images/experimental-one-moving-cut/
             output/images/experimental-three-cut-one-moving/
+            output/images/experimental-three-cut-all-moving/
           if-no-files-found: error
           retention-days: 3
