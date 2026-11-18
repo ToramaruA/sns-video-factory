@@ -11,7 +11,7 @@ import { browserlessAgent } from "@graphai/browserless_agent";
 import validateSchemaAgent from "../agents/validate_schema_agent.js";
 import { readTemplatePrompt, mkdir, writingMessage } from "../utils/file.js";
 import { browserlessCacheGenerator } from "../utils/filters.js";
-import { mulmoScriptSchema, urlsSchema } from "../types/schema.js";
+import { urlsSchema } from "../types/schema.js";
 import { ScriptingParams } from "../types/index.js";
 import { cliLoadingPlugin } from "../utils/plugins.js";
 import { graphDataScriptFromUrlPrompt } from "../utils/prompt.js";
@@ -60,7 +60,7 @@ const graphMulmoScript: GraphData = {
       agent: "validateSchemaAgent",
       inputs: {
         text: ":llm.text",
-        schema: mulmoScriptSchema,
+        schemaName: "mulmoScript",
       },
       isResult: true,
     },
