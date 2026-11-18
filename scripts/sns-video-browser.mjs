@@ -14,7 +14,8 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const MAX_BYTES = 5000;
+// 3500 Japanese characters can exceed 10KB when JSON is encoded as UTF-8.
+const MAX_BYTES = 16 * 1024;
 const MAX_HISTORY = 10;
 const planPath = join(root, "experiments/06-groq-planning/generated/sns-video-plan.json");
 const previewPath = join(root, "experiments/07-groq-flux-three-cut/generated/three-cut-preview.json");
@@ -40,7 +41,7 @@ async function readJson(req) {
   const buffers = [];
   for await (const chunk of req) {
     size += chunk.length;
-    if (size > MAX_BYTES) throw new Error("Request exceeds the 5 KB limit");
+    if (size > MAX_BYTES) throw new Error("Request exceeds the 16 KB limit");
     buffers.push(chunk);
   }
   try {
