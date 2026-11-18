@@ -1,0 +1,66 @@
+{
+  "$mulmocast": {
+    "version": "1.1"
+  },
+  "title": "[ユーザー企画に合わせた魅力的な短い日本語タイトル]",
+  "lang": "ja",
+  "canvasSize": {
+    "width": 720,
+    "height": 1280
+  },
+  "imageParams": {
+    "provider": "cloudflare_free",
+    "model": "@cf/black-forest-labs/flux-2-klein-4b"
+  },
+  "movieParams": {
+    "provider": "wan22_trial",
+    "model": "wan2.2-i2v",
+    "firstFrameImageName": "$beatImage",
+    "fillOption": {
+      "style": "aspectFill"
+    }
+  },
+  "audioParams": {
+    "suppressSpeech": false,
+    "introPadding": 0,
+    "outroPadding": 0,
+    "padding": 0,
+    "closingPadding": 0,
+    "ttsVolume": 1
+  },
+  "beats": [
+    {
+      "text": "[つかみの短い日本語ナレーション。2秒以内、8文字程度]",
+      "speaker": "Presenter",
+      "duration": 2,
+      "imagePrompt": "[English. An attention-grabbing cinematic vertical establishing shot with clear composition, no text.]",
+      "moviePrompt": "[English. Specific, realistic 2-second camera and subject movement starting from the generated still image.]"
+    },
+    {
+      "text": "[内容を伝える短い日本語ナレーション。2秒以内、8文字程度]",
+      "speaker": "Presenter",
+      "duration": 2,
+      "imagePrompt": "[English. The central visual demonstrating the idea, coherent lighting and setting, no text.]",
+      "moviePrompt": "[English. Smooth natural movement with consistent subjects and stable scene geometry over two seconds.]"
+    },
+    {
+      "text": "[印象的な締めの短い日本語ナレーション。2秒以内、8文字程度]",
+      "speaker": "Presenter",
+      "duration": 2,
+      "imagePrompt": "[English. A distinctive cinematic closing shot matching the previous aesthetic, no text.]",
+      "moviePrompt": "[English. A subtle, captivating two-second ending movement with a stable camera.]"
+    }
+  ],
+  "speechParams": {
+    "speakers": {
+      "Presenter": {
+        "provider": "gemini",
+        "model": "gemini-3.8-flash-tts",
+        "voiceId": "Kore"
+      }
+    }
+  },
+  "captionParams": {
+    "lang": "ja"
+  }
+}
