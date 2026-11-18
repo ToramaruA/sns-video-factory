@@ -1,4 +1,4 @@
-import { assert, type AgentFunction, type AgentFunctionInfo, type DefaultConfigData } from "graphai";
+import { assert, GraphAILogger, type AgentFunction, type AgentFunctionInfo, type DefaultConfigData } from "graphai";
 import { type MulmoScript, mulmoScriptSchema } from "../types/index.js";
 
 interface ValidateMulmoScriptInputs {
@@ -41,6 +41,17 @@ export const validateSchemaAgent: AgentFunction<object, ValidateMulmoScriptRespo
       data: parsed,
     };
   } catch (error) {
+    if (process.env.SNS_VIDEO_FREE_ONLY === "1") {
+      // Log schema paths and diagnostic types only. Do not expose Groq output,
+      // creative brief or any possibly private content to public Actions logs.
+      const issues = (error as { issues?: { path?: PropertyKey[]; code?: string }[] } | null)?.issues;
+      const reason = error instanceof SyntaxError
+        ? "Response is not parseable JSON (raw and fenced formats both supported)"
+        : issues?.length
+          ? issues.slice(0, 6).map((issue) => String(issue.path?.join(".") || "$root") + ":" + String(issue.code || "invalid")).join(", ")
+          : error instanceof Error ? error.name : "Unknown validation error";
+      GraphAILogger.info("Free MulmoScript validation rejected response: " + reason);
+    }
     return {
       isValid: false,
       error: error instanceof Error ? error.message : String(error),
