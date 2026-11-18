@@ -7,8 +7,8 @@
 | 工程 | 元MulmoCastの接続点・既存AI | 無課金化の判断 | 実装状態 |
 | --- | --- | --- | --- |
 | 企画・カット割り | `tool scripting` / `llmPair` / `provider2LLMAgent.groq` | Groq Freeの `openai/gpt-oss-20b` を**既存CLIオプション**で選択可能。新コード不要 | **既存機能のみ** |
-| 画像生成 | `provider2ImageAgent` / `images` / `image_references` | Google Gemini画像APIのFree Tierは公式料金表で「Not available」。既存Google設定だけでは無料化できない。Cloudflare Workers FreeのFLUX.1 schnellを既存image agent境界に追加 | **最小provider接続を追加** |
-| 画像入力・参照 | `imageParams.images` / `beat.image` / `imageNames` | 元の画像入力・素材使用は維持。FLUX.1 schnellは**テキストから画像のみ**で、参照画像が指定された生成はAPI送信前に明示的エラー。他の参照画像対応モデルや独自画像ファイル入力を削除しない | **元の形式を維持** |
+| 画像生成 | `provider2ImageAgent` / `images` / `image_references` | Google Gemini画像APIのFree Tierは公式料金表で「Not available」。既存Google設定だけでは無料化できない。Cloudflare Workers FreeのFLUX.2 Klein 4B（直接参照画像対応）とFLUX.1 Schnellを既存image agent境界に追加 | **最小provider接続を追加** |
+| 画像入力・参照 | `imageParams.images` / `beat.image` / `imageNames` | 元の画像入力・素材使用を維持し、Cloudflare FLUX.2 Klein 4Bは**参考画像最大4枚を直接multipartで入力**する。FLUX.1 Schnell選択時だけ参照画像を明示的エラーにする | **既存形式で直接参照に対応（オフラインテスト済み）** |
 | I2V / T2V | `provider2MovieAgent.google/replicate`, `moviePrompt` | 既存プロバイダーはAPI有料。継続無料・API・SNS宣伝利用を満たすモデルを未確認。無料と確認できるまで接続しない・動画化済みと呼ばない | **未対応** |
 | 日本語音声 | `provider2TTSAgent.gemini`, `ttsGeminiAgent`, `audio` | **Gemini 3.8 Flash TTS / Flash-Lite TTSは公式API Free Tierで入出力無料**。元MulmoCastが既に接続済みなので、無料のGoogle APIキーと `speechParams` の設定のみで使用可能。VOICEVOX Nemoは代替候補で今は追加不要 | **既存設定のみ（実通信未検証）** |
 | 字幕・音声素材・合成・MP4 | 既存 `audio → images → captions → avatar → movie` | 変更不要 | **未変更** |
@@ -45,14 +45,14 @@ export SNS_VIDEO_CLOUDFLARE_FREE_PLAN_CONFIRMED=1
 ```json
 "imageParams": {
   "provider": "cloudflare_free",
-  "model": "@cf/black-forest-labs/flux-1-schnell"
+  "model": "@cf/black-forest-labs/flux-2-klein-4b"
 }
 ```
 
 例えば `beats` に `imagePrompt` を残したまま `mulmo images script.json` を実行する（`mulmo movie` は既定の有料音声設定なども実行する可能性があるため、料金の確認なしには実行しない）。このproviderは公式の既存GraphAI画像生成・参照画像処理へ登録されるだけで、動画制作経路やMulmoScriptは置き換えない。
 
 - `beat.image: {type:"image",source:{kind:"path",path:"..."}}` などの既存素材入力は引き続きMulmoCastが利用できる。
-- `imageNames` 等で指定した参照画像を使って**新たな画像を生成**する場合、FLUX.1 schnellには画像入力パラメーターがなく、画像参照は明示的に停止する。入力された画像自体を静止画素材として使用する経路まで禁止しない。
+- `imageNames` 等で指定した参照画像を使って**新しい画像を生成**する場合、FLUX.2 Klein 4Bは参考画像を直接モデルへ送る（最大4枚、内部で各辺510px以下に縮小）。FLUX.1 Schnellは従来どおりテキスト生成のみで、参照画像を指定するとAPI送信前に停止する。入力画像をそのまま動画素材として使う既存機能は変更しない。
 - 無料契約の確認は利用者の申告であり、自動検証ではない。無料枠切れ・契約違いでは失敗し、有料サービスにはフォールバックしない。
 - Cloudflareの定額・従量課金条件やモデル使用条件は変わり得る。APIキー設定だけで無料と判断しない。
 
@@ -74,17 +74,37 @@ export SNS_VIDEO_CLOUDFLARE_FREE_PLAN_CONFIRMED=1
 
 元MulmoCastの `ttsGeminiAgent` が直接音声を作るため**VOICEVOX連携を追加する必要はない**。Flash-Lite TTS `gemini-3.8-flash-lite-tts` もFree Tierがある。日本語での実音質・API疎通は未検証。GoogleのPaid Tierや不明な請求設定のアカウントで無料と決めつけない。プロジェクト固有の無料レート制限にも従う。
 
+## 無断課金を防ぐ追加チェック
+
+MulmoCastの標準 `mulmo movie` には有料モデルの既定値が残っているため、**無料モード時のみ**元のCLI実行前にチェックする。
+
+```bash
+export SNS_VIDEO_FREE_ONLY=1
+export SNS_VIDEO_CLOUDFLARE_FREE_PLAN_CONFIRMED=1
+# CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_API_TOKEN, GEMINI_API_KEY をそれぞれ別途指定
+mulmo movie docs/sns-video/examples/free-stills-ja-narration.json
+```
+
+`SNS_VIDEO_FREE_ONLY=1` は `mulmo movie`・`mulmo images`・`mulmo audio` の入口で、有料の既定LLM/TTS/画像/動画生成などにつながる設定を**事前に拒否する**。たとえば `moviePrompt`、`enableLipSync`、`htmlPrompt`、有料image/TTSモデル、翻訳が必要なケースは停止する。したがって**実I2Vは依然として未対応**。フラグを設定しなければ元のMulmoCast CLIの動作は変わらない。
+
+このガードは**CLI専用**で、外部アプリがライブラリAPIを直接呼ぶ場合を保護しない。またアカウントのWorkers Free契約をAPIで実証するものではない。LLM企画生成 `tool scripting` では`--llm groq`を明示する。
+
+参考画像を使う具体例: [free-reference-image.json](./examples/free-reference-image.json)（`reference.png`は各利用者が用意する）。
+
 ## 変更範囲と検証
 
 - 元のMulmoCastの `src/types/provider2agent.ts` に選択可能な画像providerを1件追加。
 - 元の `src/agents/index.ts`、`src/actions/images.ts`、`src/actions/image_references.ts` に画像エージェントを登録。
-- Cloudflare公式APIのみ使う小さなエージェントと、無料プラン確認ガードを追加。
+- Cloudflare公式APIのみ使う小さなエージェントを追加。FLUX.2 Kleinの参考画像はFFmpegで510px以下に縮小後、multipart形式で送信し、出力はMulmoCastの画像パスに合わせてPNG化。
+- 無料モードの課金回避を目的に既存CLIに条件付きの事前検査を追加（未指定時は無効）。
 - オフラインのHTTPモックテストを追加。**実際のGroq/Cloudflare API、画像品質、本番動画生成の検証ではない**。
 
 ## 公式料金・仕様
 
 - Groq Free Planのレート制限（`openai/gpt-oss-20b`）: https://console.groq.com/docs/rate-limits
 - Cloudflare Workers AI Free（10,000 Neurons/日、Workers Freeでは上限超過後に拒否）: https://developers.cloudflare.com/workers-ai/platform/pricing/
+- FLUX.2 Klein 4Bの最大4枚の参考画像・multipart仕様: https://developers.cloudflare.com/changelog/post/2026-01-15-flux-2-klein-4b-workers-ai/
+- FLUX.2 Klein 4B公式モデル: https://developers.cloudflare.com/workers-ai/models/flux-2-klein-4b/
 - FLUX.1 schnell API仕様（`prompt`、`steps`、画像はJPEG/base64）: https://developers.cloudflare.com/workers-ai/models/flux-1-schnell/
 - Google Gemini image API料金（Free Tier不可）: https://ai.google.dev/gemini-api/docs/pricing
 - Gemini 3.8 TTS Free Tier料金表（入力・音声出力ともFree of charge）: https://ai.google.dev/gemini-api/docs/pricing
