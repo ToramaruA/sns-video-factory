@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { assertSnsFreeMode } from "../../src/sns-video/safety/free_cli_guard.js";
 import { MulmoScriptMethods } from "../../src/methods/mulmo_script.js";
 import { createMockContext } from "../actions/utils.js";
@@ -28,12 +29,16 @@ const makeContext = (beats: Record<string, unknown>[], overrides: Record<string,
 
 const withFreeMode = (work: () => void) => {
   const previous = process.env.SNS_VIDEO_FREE_ONLY;
+  const previousGemini = process.env.SNS_VIDEO_GEMINI_TTS_FREE_CONFIRMED;
   process.env.SNS_VIDEO_FREE_ONLY = "1";
+  process.env.SNS_VIDEO_GEMINI_TTS_FREE_CONFIRMED = "1";
   try {
     work();
   } finally {
     if (previous === undefined) delete process.env.SNS_VIDEO_FREE_ONLY;
     else process.env.SNS_VIDEO_FREE_ONLY = previous;
+    if (previousGemini === undefined) delete process.env.SNS_VIDEO_GEMINI_TTS_FREE_CONFIRMED;
+    else process.env.SNS_VIDEO_GEMINI_TTS_FREE_CONFIRMED = previousGemini;
   }
 };
 
@@ -156,4 +161,16 @@ test("Wan prototype only permits the single moving cut with both opt-ins", () =>
     if (oldMaximum === undefined) delete process.env.SNS_VIDEO_MAX_WAN_I2V_REQUESTS;
     else process.env.SNS_VIDEO_MAX_WAN_I2V_REQUESTS = oldMaximum;
   }
+});
+
+test("three existing Wan clips with Gemini Free TTS pass the original MulmoCast movie preflight", () => {
+  withFreeMode(() => {
+    const source = JSON.parse(readFileSync("docs/sns-video/examples/experimental-three-cut-narrated.json", "utf8"));
+    const ctx = makeContext(source.beats, source);
+    assert.equal(ctx.studio.script.beats.length, 3);
+    assert.ok(ctx.studio.script.beats.every((beat) => beat.image?.type === "movie" && !beat.moviePrompt));
+    assert.doesNotThrow(() => assertSnsFreeMode(ctx, "movie"));
+    delete process.env.SNS_VIDEO_GEMINI_TTS_FREE_CONFIRMED;
+    assert.throws(() => assertSnsFreeMode(ctx, "movie"), /Gemini API project/);
+  });
 });
