@@ -1,3 +1,4 @@
+import { assertSnsFreeMode } from "../../../sns-video/safety/free_cli_guard.js";
 import { audio } from "../../../actions/index.js";
 import { dumpUsageIfRequested, initializeContext, runTranslateIfNeeded, printUsageEstimate } from "../../helpers.js";
 import { CliArgs } from "../../../types/cli_types.js";
@@ -11,6 +12,7 @@ export const handler = async (argv: CliArgs<{ estimate?: boolean; json?: boolean
     printUsageEstimate(context, "audio", argv.json);
     return;
   }
+  assertSnsFreeMode(context, "audio");
   await runTranslateIfNeeded(context);
   await audio(context);
   dumpUsageIfRequested(context);
