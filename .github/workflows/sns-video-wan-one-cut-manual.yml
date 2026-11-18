@@ -104,6 +104,12 @@ jobs:
         run: |
           python3 -m venv .venv
           .venv/bin/python -m pip install --disable-pip-version-check gradio_client==2.7.2
+      - name: Install and preflight the browser BEFORE any AI generation
+        if: inputs.render_mode == 'narrated_from_artifact' || inputs.render_mode == 'onepass_narrated'
+        run: |
+          sudo apt-get install -y fonts-noto-cjk
+          ./node_modules/.bin/puppeteer browsers install chrome
+          node --input-type=module -e 'import puppeteer from "puppeteer"; const browser = await puppeteer.launch({ args: ["--no-sandbox", "--disable-setuid-sandbox"] }); await browser.close(); console.log("PASS: Puppeteer Chrome launches before AI requests");'
       - name: Original MulmoCast renders requested moving cuts without paid video APIs
         if: inputs.render_mode != 'narrated_from_artifact'
         run: |
@@ -154,11 +160,6 @@ jobs:
           fi
           ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video"
           echo "PASS: ${RENDER_MODE} rendered by original MulmoCast, with no paid video APIs"
-      - name: Install the browser needed by original MulmoCast captions
-        if: inputs.render_mode == 'narrated_from_artifact' || inputs.render_mode == 'onepass_narrated'
-        run: |
-          sudo apt-get install -y fonts-noto-cjk
-          ./node_modules/.bin/puppeteer browsers install chrome
       - name: Download saved moving cuts (not another Wan/FLUX request)
         if: inputs.render_mode == 'narrated_from_artifact'
         uses: actions/download-artifact@v4
