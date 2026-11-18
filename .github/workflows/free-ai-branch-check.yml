@@ -18,6 +18,8 @@ jobs:
         env:
           PUPPETEER_SKIP_DOWNLOAD: 'true'
         run: yarn install --frozen-lockfile
+      - name: Install FFmpeg (MulmoCast image/video dependency)
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Build original MulmoCast
         run: yarn build
       - name: Typecheck tests
