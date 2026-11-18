@@ -1,0 +1,66 @@
+{
+  "$mulmocast": {
+    "version": "1.1"
+  },
+  "title": "無料SNS動画・3カット一括生成（日本語音声・字幕）",
+  "lang": "ja",
+  "canvasSize": {
+    "width": 720,
+    "height": 1280
+  },
+  "imageParams": {
+    "provider": "cloudflare_free",
+    "model": "@cf/black-forest-labs/flux-2-klein-4b"
+  },
+  "movieParams": {
+    "provider": "wan22_trial",
+    "model": "wan2.2-i2v",
+    "firstFrameImageName": "$beatImage",
+    "fillOption": {
+      "style": "aspectFill"
+    }
+  },
+  "audioParams": {
+    "suppressSpeech": false,
+    "introPadding": 0,
+    "outroPadding": 0,
+    "padding": 0,
+    "closingPadding": 0,
+    "ttsVolume": 1
+  },
+  "beats": [
+    {
+      "text": "冬の夜。",
+      "duration": 2,
+      "imagePrompt": "Vertical cinematic establishing shot of an elegant Christmas concert stage with red velvet curtains, warm spotlights, a decorated Christmas tree, golden festive lights, a polished wooden stage. No people, no signage, no text.",
+      "moviePrompt": "A gentle cinematic dolly in toward the warm spotlit Christmas stage, while Christmas tree lights twinkle softly and golden dust sparkles. Smooth natural 2-second shot, stable stage geometry.",
+      "speaker": "Presenter"
+    },
+    {
+      "text": "音が響く。",
+      "duration": 2,
+      "imagePrompt": "Vertical cinematic close-up, cheerful small toy robot standing center frame on the same Christmas concert stage with red velvet curtains and warm golden lights. Clear distinct arms and legs, polished stage, no text.",
+      "moviePrompt": "The small toy robot waves one arm and takes one small step forward on the Christmas concert stage. Smooth motion, stable camera, consistent robot appearance, two seconds.",
+      "speaker": "Presenter"
+    },
+    {
+      "text": "さあ、始まる。",
+      "duration": 2,
+      "imagePrompt": "Vertical cinematic final shot of the same Christmas concert stage: warm glowing lights, red velvet curtains, golden bokeh and Christmas tree, joyful festive ending atmosphere, empty center space, no people and no text.",
+      "moviePrompt": "The Christmas tree lights twinkle in a cheerful finale while the warm stage spotlights slowly brighten; a subtle smooth camera push forward, no new people or objects, 2-second motion.",
+      "speaker": "Presenter"
+    }
+  ],
+  "speechParams": {
+    "speakers": {
+      "Presenter": {
+        "provider": "gemini",
+        "model": "gemini-3.8-flash-tts",
+        "voiceId": "Kore"
+      }
+    }
+  },
+  "captionParams": {
+    "lang": "ja"
+  }
+}
