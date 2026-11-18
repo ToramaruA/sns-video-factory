@@ -29,8 +29,9 @@ const makeContext = (beats: Record<string, unknown>[], overrides: Record<string,
 const withFreeMode = (work: () => void) => {
   const previous = process.env.SNS_VIDEO_FREE_ONLY;
   process.env.SNS_VIDEO_FREE_ONLY = "1";
-  try { work(); }
-  finally {
+  try {
+    work();
+  } finally {
     if (previous === undefined) delete process.env.SNS_VIDEO_FREE_ONLY;
     else process.env.SNS_VIDEO_FREE_ONLY = previous;
   }
