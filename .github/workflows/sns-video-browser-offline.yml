@@ -7,6 +7,7 @@ on:
       - 'scripts/test-sns-video-browser.mjs'
       - 'scripts/test-sns-video-browser-real-mp4.mjs'
       - 'scripts/verify-sns-video-browser-live.mjs'
+      - 'scripts/test-sns-video-browser-live-gates.mjs'
       - '.github/workflows/sns-video-groq-flux-three-cut-manual.yml'
       - 'experiments/04-offline-e2e/**'
       - 'docs/sns-video/BROWSER_MINIMAL.md'
@@ -18,6 +19,7 @@ on:
       - 'scripts/test-sns-video-browser.mjs'
       - 'scripts/test-sns-video-browser-real-mp4.mjs'
       - 'scripts/verify-sns-video-browser-live.mjs'
+      - 'scripts/test-sns-video-browser-live-gates.mjs'
       - '.github/workflows/sns-video-groq-flux-three-cut-manual.yml'
       - 'experiments/04-offline-e2e/**'
       - 'docs/sns-video/BROWSER_MINIMAL.md'
@@ -39,6 +41,8 @@ jobs:
         run: node --test scripts/test-sns-video-browser.mjs
       - name: Syntax check live HTTP verification without calling external APIs
         run: node --check scripts/verify-sns-video-browser-live.mjs
+      - name: Fail-closed manual live browser preflight (no secrets or API calls)
+        run: node --test scripts/test-sns-video-browser-live-gates.mjs
 
   browser-real-mp4-offline:
     runs-on: ubuntu-latest
