@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { generateCloudflareFluxImage } from "../../src/agents/image_cloudflare_flux_agent.js";
 import { MulmoScriptMethods } from "../../src/methods/mulmo_script.js";
 import { MulmoPresentationStyleMethods } from "../../src/methods/mulmo_presentation_style.js";
@@ -72,4 +73,14 @@ test("quota failure does not fall back to a paid API", async () => {
     },
   }), /HTTP 429/);
   assert.equal(requests, 1);
+});
+
+test("example MulmoScript keeps original Japanese TTS and image provider fields", () => {
+  const example = JSON.parse(readFileSync("docs/sns-video/examples/free-stills-ja-narration.json", "utf8"));
+  const script = MulmoScriptMethods.validate(example);
+  assert.equal(script.imageParams.provider, "cloudflare_free");
+  assert.equal(script.speechParams.speakers.Presenter.provider, "gemini");
+  assert.equal(script.speechParams.speakers.Presenter.model, "gemini-3.8-flash-tts");
+  assert.equal(script.audioParams.suppressSpeech, false);
+  assert.equal(script.beats.length, 2);
 });
