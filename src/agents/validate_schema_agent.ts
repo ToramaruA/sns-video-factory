@@ -18,8 +18,14 @@ interface ValidateMulmoScriptResponse {
  * Do not try to repair invalid objects or silently alter provider/beat fields.
  */
 export const extractMulmoJsonText = (response: string): string => {
-  const match = response.match(/```(?:json)?\s*\r?\n([\s\S]*?)\r?\n```/i);
-  return (match?.[1] ?? response).trim();
+  const start = response.indexOf("```");
+  if (start === -1) return response.trim();
+  const firstNewline = response.indexOf("\n", start + 3);
+  if (firstNewline === -1) return response.trim();
+  const language = response.slice(start + 3, firstNewline).trim().toLowerCase();
+  if (language !== "" && language !== "json") return response.trim();
+  const end = response.indexOf("```", firstNewline + 1);
+  return end === -1 ? response.trim() : response.slice(firstNewline + 1, end).trim();
 };
 
 /**
