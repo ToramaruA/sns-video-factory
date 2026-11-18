@@ -98,7 +98,7 @@
 
 **P1 — ユーザー入力を完成したMulmoScriptに接続する。**
 
-**実装状況（2026-11-19）:** 元MulmoCastの `tool scripting --input-file --template sns_free_vertical --llm groq --llm_model openai/gpt-oss-20b` を利用する。SNS縦型動画用の元MulmoScript形式のテンプレートを `assets/templates/sns_free_vertical.json` と `scripts/templates/sns_free_vertical_video.json` に追加。既存GitHub Actions `sns-video-groq-flux-three-cut-manual.yml` の再出発ブランチ版に企画文入力、Groq Free Plan確認、生成MulmoScriptのアーカイブと無料安全チェック、任意の一括 `mulmo movie` を接続。**Groq実APIでの企画生成と生成した台本からの動画制作はまだ未検証。** 独自LLMエージェントは追加していない。
+**実装状況（2026-11-19）:** 元MulmoCastの `tool scripting --input-file --template sns_free_vertical --llm groq --llm_model openai/gpt-oss-20b` を利用する。SNS縦型動画用の元MulmoScript形式のテンプレートを `assets/templates/sns_free_vertical.json` と `scripts/templates/sns_free_vertical_video.json` に追加。既存GitHub Actions `sns-video-groq-flux-three-cut-manual.yml` の再出発ブランチ版に企画文入力、Groq Free Plan確認、生成MulmoScriptのアーカイブと無料安全チェック、任意の一括 `mulmo movie` を接続。**Groq実APIでの企画生成は[GitHub Actions #44350517524](https://github.com/ToramaruA/sns-video-factory/actions/runs/44350517524)で成功（3カット、MulmoScript安全検証・成果物保存まで通過）。** 一方、生成した台本からの実動画制作は未検証。 独自LLMエージェントは追加していない。
 
 
 4. 企画文 → 既存 `mulmo tool scripting --llm groq --llm_model openai/gpt-oss-20b` → MulmoScriptを実際の無料アカウントで確認。画像指示・動画指示・適切なcut数を満たさなければ、**既存のテンプレート／プロンプト**を最小変更して補う（独自カット割りエンジンは禁止）。
