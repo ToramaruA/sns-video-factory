@@ -14,6 +14,8 @@ on:
     paths:
       - 'scripts/sns-video-browser.*'
       - 'scripts/test-sns-video-browser.mjs'
+      - 'scripts/test-sns-video-browser-real-mp4.mjs'
+      - 'experiments/04-offline-e2e/**'
       - 'docs/sns-video/BROWSER_MINIMAL.md'
       - '.github/workflows/sns-video-browser-offline.yml'
 
