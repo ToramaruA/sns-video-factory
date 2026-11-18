@@ -92,3 +92,28 @@ test('failed pipeline never serves a stale output or leaks provider errors to us
     await new Promise(res => server.close(res));
   }
 });
+
+
+test('full-length Japanese brief is accepted as UTF-8, while oversized and over-3500 inputs are rejected', async () => {
+  let received = '';
+  const { url, server } = await start(async ({ brief }) => {
+    received = brief;
+    throw new Error('Intentionally stop before external AI requests');
+  });
+  try {
+    const japanese = 'あ'.repeat(3500);
+    assert.ok(Buffer.byteLength(JSON.stringify({ brief: japanese, voice: false })) > 5000);
+    const result = await post(url, { brief: japanese, voice: false });
+    assert.equal(result.status, 202, '3,500 Japanese characters must not be blocked by a 5-KB byte limit');
+    const { id } = await result.json();
+    const finished = await waitForDone(url, id);
+    assert.equal(finished.state, 'failed');
+    assert.equal(received, japanese);
+    const tooLong = await post(url, { brief: japanese + 'あ', voice: false });
+    assert.equal(tooLong.status, 400);
+    const hugeRequest = await post(url, { brief: 'short', voice: false, ignored: 'x'.repeat(20000) });
+    assert.equal(hugeRequest.status, 413);
+  } finally {
+    await new Promise(res => server.close(res));
+  }
+});
