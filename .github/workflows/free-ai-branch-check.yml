@@ -18,14 +18,16 @@ jobs:
         env:
           PUPPETEER_SKIP_DOWNLOAD: 'true'
         run: yarn install --frozen-lockfile
-      - name: Install FFmpeg (MulmoCast image/video dependency)
-        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Build original MulmoCast
         run: yarn build
       - name: Typecheck tests
         run: yarn typecheck:test
+      - name: Diagnose upstream nested scripting GraphAI data path without any API
+        run: ./node_modules/.bin/tsx --test test/agents/test_sns_scripting_graph.ts
+      - name: Install FFmpeg (MulmoCast image/video dependency)
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
       - name: Targeted free-AI image tests (offline)
-        run: ./node_modules/.bin/tsx --test test/agents/test_image_cloudflare_flux_free.ts test/agents/test_free_cli_guard.ts test/agents/test_sns_scripting_graph.ts
+        run: ./node_modules/.bin/tsx --test test/agents/test_image_cloudflare_flux_free.ts test/agents/test_free_cli_guard.ts
       - name: Existing MulmoCast reference image and movie regression tests
         run: ./node_modules/.bin/tsx --test test/actions/test_image_reference_params.ts test/methods/test_image_prompt_media.ts test/zod/test_image_references_schema.ts test/methods/test_presentation_style_movie.ts
       - name: Lint
