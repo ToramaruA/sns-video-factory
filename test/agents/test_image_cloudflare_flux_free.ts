@@ -48,7 +48,10 @@ test("FLUX.2 Klein sends native multipart image bytes and prompt in same request
   try {
     let calls = 0;
     const output = await generateCloudflareFluxImage("Match the performer from image 0", {
-      env, model: klein, referenceImages: [reference], canvasSize: { width: 720, height: 1280 },
+      env,
+      model: klein,
+      referenceImages: [reference],
+      canvasSize: { width: 720, height: 1280 },
       fetcher: async (url, init) => {
         calls++;
         assert.equal(url, `https://api.cloudflare.com/client/v4/accounts/${env.CLOUDFLARE_ACCOUNT_ID}/ai/run/${klein}`);
@@ -81,7 +84,8 @@ test("FLUX.2 Klein sends native multipart image bytes and prompt in same request
 test("FLUX.1 Schnell remains selectable for prompts without references", async () => {
   let calls = 0;
   const output = await generateCloudflareFluxImage("A concert stage", {
-    env, model: schnell,
+    env,
+    model: schnell,
     fetcher: async (url, init) => {
       calls++;
       assert.ok(url.endsWith(schnell));
@@ -103,29 +107,45 @@ test("invalid plan/model/oversized reference-list cannot send an API request", a
     { env, prompt: "x".repeat(2049) },
   ];
   for (const scenario of cases) {
-    await assert.rejects(generateCloudflareFluxImage(scenario.prompt, {
-      ...scenario,
-      fetcher: async () => { throw new Error("Unexpected network request"); },
-    }), /Free|ACCOUNT_ID|Unsupported|reference images|maximum|2048/);
+    await assert.rejects(
+      generateCloudflareFluxImage(scenario.prompt, {
+        ...scenario,
+        fetcher: async () => {
+          throw new Error("Unexpected network request");
+        },
+      }),
+      /Free|ACCOUNT_ID|Unsupported|reference images|maximum|2048/,
+    );
   }
 });
 
 test("missing reference image blocks API request", async () => {
-  await assert.rejects(generateCloudflareFluxImage("concert", {
-    env, model: klein, referenceImages: ["/path/that/does/not/exist.png"],
-    fetcher: async () => { throw new Error("NETWORK MUST NOT BE CALLED"); },
-  }), /ENOENT/);
+  await assert.rejects(
+    generateCloudflareFluxImage("concert", {
+      env,
+      model: klein,
+      referenceImages: ["/path/that/does/not/exist.png"],
+      fetcher: async () => {
+        throw new Error("NETWORK MUST NOT BE CALLED");
+      },
+    }),
+    /ENOENT/,
+  );
 });
 
 test("HTTP quota error does not fall back to a paid API", async () => {
   let calls = 0;
-  await assert.rejects(generateCloudflareFluxImage("concert", {
-    env, model: klein,
-    fetcher: async () => {
-      calls++;
-      return Response.json({ success: false, errors: [{ code: 3036 }] }, { status: 429 });
-    },
-  }), /HTTP 429/);
+  await assert.rejects(
+    generateCloudflareFluxImage("concert", {
+      env,
+      model: klein,
+      fetcher: async () => {
+        calls++;
+        return Response.json({ success: false, errors: [{ code: 3036 }] }, { status: 429 });
+      },
+    }),
+    /HTTP 429/,
+  );
   assert.equal(calls, 1);
 });
 
