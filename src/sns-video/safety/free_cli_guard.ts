@@ -73,6 +73,9 @@ export const assertSnsFreeMode = (context: MulmoStudioContext, action: FreeActio
     }
 
     if (audioGeneration && !style.audioParams.suppressSpeech && beat.text?.trim() && !beat.audio) {
+      if (process.env.SNS_VIDEO_GEMINI_TTS_FREE_CONFIRMED !== "1") {
+        throw new Error(`${label}: confirm that the Gemini API project is on the Free Tier before TTS`);
+      }
       const speech = MulmoStudioContextMethods.getAudioParam(context, beat, context.lang ?? script.lang);
       if (speech.provider !== "gemini" || !FREE_TTS_MODELS.has(speech.model ?? "gemini-3.8-flash-tts")) {
         throw new Error(`${label}: speech model is not in the verified Gemini Free TTS allowlist`);
