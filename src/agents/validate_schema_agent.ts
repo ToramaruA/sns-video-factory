@@ -13,6 +13,16 @@ interface ValidateMulmoScriptResponse {
 }
 
 /**
+ * LLMs may return either a fenced JSON block (as the prompt requests) or
+ * a bare JSON object. Keep MulmoCast's existing schema as the sole validator.
+ * Do not try to repair invalid objects or silently alter provider/beat fields.
+ */
+export const extractMulmoJsonText = (response: string): string => {
+  const match = response.match(/```(?:json)?\\s*\\r?\\n([\\s\\S]*?)\\r?\\n```/i);
+  return (match?.[1] ?? response).trim();
+};
+
+/**
  * Zod schema validation agent
  * Validates if a JSON string conforms to the Zod schema
  */
@@ -24,7 +34,7 @@ export const validateSchemaAgent: AgentFunction<object, ValidateMulmoScriptRespo
     assert(!!schema, "schema is required");
     assert(!!text, "text is required");
 
-    const jsonData = JSON.parse(text);
+    const jsonData = JSON.parse(extractMulmoJsonText(text));
     const parsed = schema.parse(jsonData);
     return {
       isValid: true,
