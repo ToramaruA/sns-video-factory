@@ -16,7 +16,7 @@ export const assertSnsFreeMode = (context: MulmoStudioContext, action: FreeActio
 
   // Prototype-only: allow at most one 2-second Wan request by default, or three
   // when an explicit three-request manual mode is selected. No production approval.
-  // All moviePrompt generation remains blocked without both opt-ins.
+  // All moviePrompt generation remains blocked without both opt-ins.\n  // Speech may be generated in the SAME movie run only when the separate Gemini\n  // Free Tier guard below approves every TTS beat before any API is called.
   const movieBeats = script.beats.filter((beat) => Boolean(beat.moviePrompt));
   const maxWanRequests = process.env.SNS_VIDEO_MAX_WAN_I2V_REQUESTS === "3" ? 3 : 1;
   const allowWanDemo =
@@ -25,7 +25,6 @@ export const assertSnsFreeMode = (context: MulmoStudioContext, action: FreeActio
     process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT === "1" &&
     movieBeats.length >= 1 &&
     movieBeats.length <= maxWanRequests &&
-    style.audioParams.suppressSpeech === true &&
     movieBeats.every((beat) => {
       const params = { ...style.movieParams, ...beat.movieParams };
       return (
