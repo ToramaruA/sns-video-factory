@@ -19,6 +19,7 @@ test("native Groq scripting graph passes text and the Zod schema to validation",
       script: {
         agent: "nestedAgent",
         inputs: { llmAgent: ":llmAgent", prompt: ":prompt" },
+        isResult: true,
         graph: {
           nodes: {
             llm: { agent: ":llmAgent", inputs: { text: responseText } },
@@ -37,5 +38,5 @@ test("native Groq scripting graph passes text and the Zod schema to validation",
     validateSchemaAgent,
   });
   const output = await graph.run<{ validateSchemaAgent?: { isValid: boolean; error?: string } }>();
-  assert.equal(output?.script?.validateSchemaAgent?.isValid, true, String(output?.script?.validateSchemaAgent?.error ?? ""));
+  assert.equal(output?.script?.validateSchemaAgent?.isValid, true, JSON.stringify(output));
 });
