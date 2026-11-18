@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { getAvailablePromptTemplates, readTemplatePrompt } from "../../src/utils/file.js";
 import { assertSnsFreeMode } from "../../src/sns-video/safety/free_cli_guard.js";
+import { extractMulmoJsonText } from "../../src/agents/validate_schema_agent.js";
 import { MulmoScriptMethods } from "../../src/methods/mulmo_script.js";
 import { createMockContext } from "../actions/utils.js";
 
@@ -231,4 +232,12 @@ test("native MulmoCast Groq scripting lists the Free SNS template with a valid M
   const ctx = makeContext(sample.beats, sample);
   assert.equal(ctx.studio.script.beats.length, 3);
   assert.ok(ctx.studio.script.beats.every((beat) => beat.duration === 2 && beat.moviePrompt && beat.imagePrompt));
+});
+
+test("Groq MulmoScript JSON extraction supports native fenced and raw formats", () => {
+  const script = JSON.stringify(JSON.parse(readFileSync("scripts/templates/sns_free_vertical_video.json", "utf8")));
+  const fenced = ["Here is the script:", "```json", script, "```"].join("\n");
+  assert.deepEqual(JSON.parse(extractMulmoJsonText(fenced)), JSON.parse(script));
+  assert.deepEqual(JSON.parse(extractMulmoJsonText(script)), JSON.parse(script));
+  assert.throws(() => JSON.parse(extractMulmoJsonText("I cannot provide JSON")), SyntaxError);
 });
