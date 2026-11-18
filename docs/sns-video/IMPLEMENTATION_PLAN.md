@@ -98,6 +98,9 @@
 
 **P1 — ユーザー入力を完成したMulmoScriptに接続する。**
 
+**実装状況（2026-11-19）:** 元MulmoCastの `tool scripting --input-file --template sns_free_vertical --llm groq --llm_model openai/gpt-oss-20b` を利用する。SNS縦型動画用の元MulmoScript形式のテンプレートを `assets/templates/sns_free_vertical.json` と `scripts/templates/sns_free_vertical_video.json` に追加。既存GitHub Actions `sns-video-groq-flux-three-cut-manual.yml` の再出発ブランチ版に企画文入力、Groq Free Plan確認、生成MulmoScriptのアーカイブと無料安全チェック、任意の一括 `mulmo movie` を接続。**Groq実APIでの企画生成と生成した台本からの動画制作はまだ未検証。** 独自LLMエージェントは追加していない。
+
+
 4. 企画文 → 既存 `mulmo tool scripting --llm groq --llm_model openai/gpt-oss-20b` → MulmoScriptを実際の無料アカウントで確認。画像指示・動画指示・適切なcut数を満たさなければ、**既存のテンプレート／プロンプト**を最小変更して補う（独自カット割りエンジンは禁止）。
 5. 完成済みMulmoScript入力の場合はLLMを通さず編集済み台本を直接実行。MulmoCast既存の画像・動画・音声・参照画像入力を保持する。編集はまず既存のJSON/YAMLと公式編集機能で行い、新規UIは作らない。
 6. 企画からの1本と、完成済み台本からの1本を実際に生成できれば「小規模向けMVP」と判定する。
