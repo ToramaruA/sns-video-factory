@@ -1,0 +1,80 @@
+# The path intentionally matches the existing manual workflow on main:
+# GitHub can offer this workflow in Actions while running the selected restart branch.
+# This branch-specific version runs only one FLUX.2 image-reference test (no Groq/I2V/TTS).
+name: Free MulmoCast - FLUX.2 参考画像テスト（再出発ブランチ）
+on:
+  workflow_dispatch:
+    inputs:
+      brief:
+        description: 'Reference-image smoke test label (the example prompt is fixed).'
+        type: string
+        required: true
+        default: 'FLUX.2 参考画像テスト'
+      confirm_cloudflare_free_plan:
+        description: 'I verified Cloudflare Workers is on the FREE plan (not Paid).'
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: flux2-klein-one-image-live-smoke
+  cancel-in-progress: false
+
+jobs:
+  reference-image:
+    if: inputs.confirm_cloudflare_free_plan == true
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      SNS_VIDEO_FREE_ONLY: '1'
+      SNS_VIDEO_CLOUDFLARE_FREE_PLAN_CONFIRMED: '1'
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      OPENAI_API_KEY: ''
+      GEMINI_API_KEY: ''
+      REPLICATE_API_TOKEN: ''
+      ELEVENLABS_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check Free-plan API secrets before installing packages
+        run: |
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo 'Missing CLOUDFLARE_ACCOUNT_ID secret' >&2; exit 1; }
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing CLOUDFLARE_API_TOKEN secret' >&2; exit 1; }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: yarn
+      - name: Prepare existing MulmoCast (no new renderer)
+        env:
+          PUPPETEER_SKIP_DOWNLOAD: 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          yarn install --frozen-lockfile
+          yarn build
+      - name: Prepare one local test reference image
+        run: |
+          ffmpeg -hide_banner -loglevel error -f lavfi -i 'testsrc2=size=384x384:rate=1' -frames:v 1 -y docs/sns-video/examples/reference.png
+          test -s docs/sns-video/examples/reference.png
+      - name: Original MulmoCast images -> Cloudflare FLUX.2 Klein with reference
+        run: node lib/cli/bin.js images docs/sns-video/examples/free-reference-image.json
+      - name: Verify real generated PNG
+        run: |
+          file="$(find output/images -type f -name '0p.png' -print -quit)"
+          test -n "$file" && test -s "$file" || { echo 'Generated MulmoCast image not found' >&2; exit 1; }
+          file "$file"
+          ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$file"
+          printf 'Generated file: %s\n' "$file"
+      - name: Save input reference and generated image for visual inspection
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: flux2-klein-reference-image-smoke
+          path: |
+            docs/sns-video/examples/reference.png
+            output/images/free-reference-image/
+          if-no-files-found: error
+          retention-days: 3
