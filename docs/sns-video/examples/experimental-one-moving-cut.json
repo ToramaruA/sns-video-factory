@@ -1,0 +1,34 @@
+{
+  "$mulmocast": {
+    "version": "1.1"
+  },
+  "title": "無料I2V試作・1カット",
+  "lang": "ja",
+  "canvasSize": {
+    "width": 720,
+    "height": 1280
+  },
+  "imageParams": {
+    "provider": "cloudflare_free",
+    "model": "@cf/black-forest-labs/flux-2-klein-4b"
+  },
+  "movieParams": {
+    "provider": "wan22_trial",
+    "model": "wan2.2-i2v",
+    "firstFrameImageName": "$beatImage",
+    "fillOption": {
+      "style": "aspectFill"
+    }
+  },
+  "audioParams": {
+    "suppressSpeech": true
+  },
+  "beats": [
+    {
+      "text": "",
+      "duration": 2,
+      "imagePrompt": "A cheerful small toy robot standing center frame on an elegant warm Christmas concert stage, soft theatrical spotlights, red curtains and festive lights. Clear distinct limbs. Cinematic vertical portrait. No text.",
+      "moviePrompt": "The small robot waves one arm, gently sways and takes one small step forward on the stage. Smooth natural two-second motion, stable camera and consistent appearance."
+    }
+  ]
+}
