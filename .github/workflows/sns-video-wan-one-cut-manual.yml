@@ -1,17 +1,28 @@
-name: Free MulmoCast - 3カット動画試作（初期値は3本すべて動画化）
+name: Free MulmoCast - 3カット完成版（日本語音声付き）
 
 on:
   workflow_dispatch:
     inputs:
       render_mode:
-        description: 'three_cut: 1 moving; three_all_moving: 3 moving; one_cut: 1 moving.'
+        description: 'narrated_from_artifact: add voice to saved 3 movies; other options create new movies.'
         type: choice
         required: true
-        default: three_all_moving
+        default: narrated_from_artifact
         options:
-          - three_cut
+          - narrated_from_artifact
           - three_all_moving
+          - three_cut
           - one_cut
+      source_run_id:
+        description: 'Existing successful 3-moving-cut run ID to reuse. No Wan/Cloudflare generation in narrated mode.'
+        type: string
+        required: true
+        default: '44319782951'
+      confirm_gemini_free_tier:
+        description: 'My Gemini API project/key is actually on the FREE tier; I approve sending short Japanese narration text to Gemini TTS.'
+        type: boolean
+        required: true
+        default: false
       confirm_cloudflare_free_plan:
         description: 'I verified Cloudflare Workers is FREE, not Paid.'
         type: boolean
@@ -30,6 +41,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: sns-one-moving-cut-restart-prototype
@@ -37,19 +49,21 @@ concurrency:
 
 jobs:
   render-beats:
-    if: inputs.confirm_cloudflare_free_plan == true && inputs.confirm_zerogpu_trial == true && inputs.confirm_third_party_demo_upload == true
+    if: (inputs.render_mode == 'narrated_from_artifact' && inputs.confirm_gemini_free_tier == true) || (inputs.render_mode != 'narrated_from_artifact' && inputs.confirm_cloudflare_free_plan == true && inputs.confirm_zerogpu_trial == true && inputs.confirm_third_party_demo_upload == true)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
       SNS_VIDEO_FREE_ONLY: '1'
       SNS_VIDEO_CLOUDFLARE_FREE_PLAN_CONFIRMED: '1'
-      SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT: '1'
-      SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT: '1'
+      SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT: ${{ inputs.render_mode != 'narrated_from_artifact' && '1' || '0' }}
+      SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT: ${{ inputs.render_mode != 'narrated_from_artifact' && '1' || '0' }}
+      SNS_VIDEO_GEMINI_TTS_FREE_CONFIRMED: ${{ inputs.confirm_gemini_free_tier && '1' || '0' }}
       SNS_VIDEO_PYTHON_BINARY: ${{ github.workspace }}/.venv/bin/python
       RENDER_MODE: ${{ inputs.render_mode }}
       SNS_VIDEO_MAX_WAN_I2V_REQUESTS: ${{ inputs.render_mode == 'three_all_moving' && '3' || '1' }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
       OPENAI_API_KEY: ''
       GEMINI_API_KEY: ''
       REPLICATE_API_TOKEN: ''
@@ -59,18 +73,24 @@ jobs:
       HF_HUB_DISABLE_IMPLICIT_TOKEN: '1'
     steps:
       - uses: actions/checkout@v4
-      - name: Require Free-plan credentials before any API call
+      - name: Verify selected Free Tier and credentials BEFORE running MulmoCast
         run: |
-          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo 'Missing Cloudflare Account ID' >&2; exit 1; }
-          test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing Cloudflare API token' >&2; exit 1; }
+          if [ "$RENDER_MODE" = narrated_from_artifact ]; then
+            test "$SNS_VIDEO_GEMINI_TTS_FREE_CONFIRMED" = 1 || { echo 'Gemini Free Tier confirmation required' >&2; exit 1; }
+            test -n "$GEMINI_API_KEY" || { echo 'Missing repository secret GEMINI_API_KEY for the Gemini Free Tier project' >&2; exit 1; }
+          else
+            test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo 'Missing Cloudflare Account ID' >&2; exit 1; }
+            test -n "$CLOUDFLARE_API_TOKEN" || { echo 'Missing Cloudflare API token' >&2; exit 1; }
+          fi
       - uses: actions/setup-node@v4
         with:
           node-version: '24'
           cache: yarn
       - uses: actions/setup-python@v5
+        if: inputs.render_mode != 'narrated_from_artifact'
         with:
           python-version: '3.13'
-      - name: Install original MulmoCast and the existing Wan demonstration bridge
+      - name: Install original MulmoCast and FFmpeg
         env:
           PUPPETEER_SKIP_DOWNLOAD: 'true'
         run: |
@@ -78,9 +98,13 @@ jobs:
           sudo apt-get install -y ffmpeg
           yarn install --frozen-lockfile
           yarn build
+      - name: Install Wan demo bridge ONLY for new I2V requests
+        if: inputs.render_mode != 'narrated_from_artifact'
+        run: |
           python3 -m venv .venv
           .venv/bin/python -m pip install --disable-pip-version-check gradio_client==2.7.2
       - name: Original MulmoCast renders requested moving cuts without paid video APIs
+        if: inputs.render_mode != 'narrated_from_artifact'
         run: |
           case "$RENDER_MODE" in
             three_cut) name=experimental-three-cut-one-moving ;;
@@ -115,8 +139,59 @@ jobs:
           fi
           ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video"
           echo "PASS: ${RENDER_MODE} rendered by original MulmoCast, with no paid video APIs"
+      - name: Download saved moving cuts (not another Wan/FLUX request)
+        if: inputs.render_mode == 'narrated_from_artifact'
+        uses: actions/download-artifact@v4
+        with:
+          name: free-mulmocast-one-or-three-cut-prototype
+          run-id: ${{ inputs.source_run_id }}
+          github-token: ${{ github.token }}
+          path: imported
+      - name: Prepare local movie references from the earlier 3-cut artifact
+        if: inputs.render_mode == 'narrated_from_artifact'
+        run: |
+          mkdir -p docs/sns-video/examples/narrated-assets
+          for index in 0 1 2; do
+            src="imported/output/images/experimental-three-cut-all-moving/${index}.mov"
+            test -s "$src" || { echo "Missing original moving clip: $src" >&2; exit 1; }
+            ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$src"
+            cp "$src" "docs/sns-video/examples/narrated-assets/${index}.mov"
+          done
+          python3 - <<'PY'
+          import json
+          path = "docs/sns-video/examples/experimental-three-cut-narrated.json"
+          script = json.load(open(path, encoding="utf-8"))
+          assert script["audioParams"]["suppressSpeech"] is False
+          assert len(script["beats"]) == 3
+          assert all(b.get("text") and b["image"]["type"] == "movie" and not b.get("moviePrompt") and not b.get("imagePrompt") for b in script["beats"])
+          assert all(b["image"]["source"]["path"] == f"./narrated-assets/{i}.mov" for i, b in enumerate(script["beats"]))
+          assert all(s["provider"] == "gemini" and s["model"] == "gemini-3.8-flash-tts" for s in script["speechParams"]["speakers"].values())
+          print("PASS: existing three local video clips; Gemini narration only, no paid image/video generation")
+          PY
+      - name: Add Japanese narration and captions using original MulmoCast
+        if: inputs.render_mode == 'narrated_from_artifact'
+        run: |
+          node lib/cli/bin.js movie docs/sns-video/examples/experimental-three-cut-narrated.json
+          video="output/experimental-three-cut-narrated_ja.mp4"
+          test -s "$video"
+          dimensions="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$video")"
+          test "$dimensions" = "720x1280"
+          audio_codec="$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=noprint_wrappers=1:nokey=1 "$video")"
+          test -n "$audio_codec" || { echo 'Narration audio track missing' >&2; exit 1; }
+          ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 "$video"
+          echo "PASS: existing Wan movies -> Gemini Free TTS Japanese speech + captions -> original MulmoCast MP4"
+      - name: Save full narrated SNS prototype
+        if: success() && inputs.render_mode == 'narrated_from_artifact'
+        uses: actions/upload-artifact@v4
+        with:
+          name: free-mulmocast-three-cut-japanese-narrated
+          path: |
+            docs/sns-video/examples/experimental-three-cut-narrated.json
+            output/experimental-three-cut-narrated_ja.mp4
+          if-no-files-found: error
+          retention-days: 3
       - name: Save the rendered MP4 and all generated frames
-        if: success()
+        if: success() && inputs.render_mode != 'narrated_from_artifact'
         uses: actions/upload-artifact@v4
         with:
           name: free-mulmocast-one-or-three-cut-prototype
