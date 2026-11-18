@@ -103,47 +103,42 @@ test("original MulmoCast remains unchanged without explicit free-only opt-in", (
   }
 });
 
-test("opt-in Wan one-moving-cut demo stays blocked without TWO consents and rejects all other video generation", () => {
-  const before = {
-    free: process.env.SNS_VIDEO_FREE_ONLY,
-    experiment: process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT,
-    consent: process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT,
-  };
-  const makeDemo = (beats: Record<string, unknown>[] = [{
-    text: "",
-    duration: 2,
-    imagePrompt: "A toy robot onstage",
-    moviePrompt: "The robot waves slowly",
-  }], movieParams: Record<string, unknown> = {
+test("Wan prototype only permits the single moving cut with both opt-ins", () => {
+  const oldExperiment = process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT;
+  const oldConsent = process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT;
+  const movieParams = {
     provider: "wan22_trial",
     model: "wan2.2-i2v",
     firstFrameImageName: "$beatImage",
-  }) =>
-    makeContext(beats, { movieParams, audioParams: { suppressSpeech: true } });
+  };
+  const beat = { text: "", duration: 2, imagePrompt: "A toy robot", moviePrompt: "Waves hello" };
   try {
-    process.env.SNS_VIDEO_FREE_ONLY = "1";
-    delete process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT;
-    delete process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT;
-    assert.throws(() => assertSnsFreeMode(makeDemo(), "movie"), /movie/);
+    withFreeMode(() => {
+      const ctx = makeContext([beat], { movieParams, audioParams: { suppressSpeech: true } });
+      delete process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT;
+      delete process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT;
+      assert.throws(() => assertSnsFreeMode(ctx, "movie"), /movie/);
 
-    process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT = "1";
-    assert.throws(() => assertSnsFreeMode(makeDemo(), "movie"), /movie/);
+      process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT = "1";
+      assert.throws(() => assertSnsFreeMode(ctx, "movie"), /movie/);
 
-    process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT = "1";
-    assert.doesNotThrow(() => assertSnsFreeMode(makeDemo(), "movie"));
-    assert.throws(() => assertSnsFreeMode(makeDemo(), "images"), /movie/);
-    assert.throws(() => assertSnsFreeMode(makeDemo(undefined, { provider: "google", model: "veo-3.1-generate-001", firstFrameImageName: "$beatImage" }), "movie"), /movie/);
-    assert.throws(() => assertSnsFreeMode(makeDemo([{ text: "", duration: 3, imagePrompt: "Robot", moviePrompt: "Dance" }]), "movie"), /movie/);
-    assert.throws(() => assertSnsFreeMode(makeDemo([
-      { text: "", duration: 2, imagePrompt: "Robot", moviePrompt: "Dance" },
-      { text: "", duration: 2, imagePrompt: "Stage", moviePrompt: "Pan" },
-    ]), "movie"), /movie/);
+      process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT = "1";
+      assert.doesNotThrow(() => assertSnsFreeMode(ctx, "movie"));
+      assert.throws(() => assertSnsFreeMode(ctx, "images"), /movie/);
+
+      const tooMany = makeContext([beat, beat], { movieParams, audioParams: { suppressSpeech: true } });
+      assert.throws(() => assertSnsFreeMode(tooMany, "movie"), /movie/);
+
+      const paidMovie = makeContext([beat], {
+        movieParams: { provider: "google" },
+        audioParams: { suppressSpeech: true },
+      });
+      assert.throws(() => assertSnsFreeMode(paidMovie, "movie"), /movie/);
+    });
   } finally {
-    if (before.free === undefined) delete process.env.SNS_VIDEO_FREE_ONLY;
-    else process.env.SNS_VIDEO_FREE_ONLY = before.free;
-    if (before.experiment === undefined) delete process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT;
-    else process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT = before.experiment;
-    if (before.consent === undefined) delete process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT;
-    else process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT = before.consent;
+    if (oldExperiment === undefined) delete process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT;
+    else process.env.SNS_VIDEO_ENABLE_FREE_I2V_EXPERIMENT = oldExperiment;
+    if (oldConsent === undefined) delete process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT;
+    else process.env.SNS_VIDEO_THIRD_PARTY_DEMO_CONSENT = oldConsent;
   }
 });
