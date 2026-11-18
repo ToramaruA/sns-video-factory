@@ -17,7 +17,7 @@ import {
 } from "../types/index.js";
 import type { ResolvedImageReference } from "../methods/mulmo_image_prompt_media.js";
 
-import { imageOpenaiAgent, mediaMockAgent, imageGenAIAgent, imageReplicateAgent, movieGenAIAgent, movieReplicateAgent } from "../agents/index.js";
+import { imageOpenaiAgent, mediaMockAgent, imageGenAIAgent, imageReplicateAgent, imageCloudflareFluxAgent, movieGenAIAgent, movieReplicateAgent } from "../agents/index.js";
 import { agentGenerationError, imageReferenceAction, imageFileTarget, movieFileTarget } from "../utils/error_cause.js";
 
 export type { ResolvedImageReference } from "../methods/mulmo_image_prompt_media.js";
@@ -126,7 +126,7 @@ export const generateReferenceImage = async (inputs: {
 
   try {
     const options = await imageGraphOption(context);
-    const graph = new GraphAI(image_graph_data, { imageGenAIAgent, imageOpenaiAgent, mediaMockAgent, imageReplicateAgent }, options);
+    const graph = new GraphAI(image_graph_data, { imageGenAIAgent, imageOpenaiAgent, mediaMockAgent, imageReplicateAgent, imageCloudflareFluxAgent }, options);
     graph.registerCallback(createUsageCallback(context));
     await graph.run<{ output: MulmoStudioBeat[] }>();
     return imagePath;
