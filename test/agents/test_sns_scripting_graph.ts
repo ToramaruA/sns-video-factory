@@ -34,9 +34,9 @@ test("native Groq scripting graph passes text and the Zod schema to validation",
   };
   const graph = new GraphAI(graphData, {
     ...(agents.default ?? agents),
-    stubGroqAgent: async () => ({ text: responseText }),
+    stubGroqAgent: { name: "stubGroqAgent", agent: async () => ({ text: responseText }) },
     validateSchemaAgent,
   });
-  const output = await graph.run<{ script?: { validateSchemaAgent?: { isValid: boolean; error?: string } } }>();
+  const output = await graph.run<{ validateSchemaAgent?: { isValid: boolean; error?: string } }>();
   assert.equal(output?.script?.validateSchemaAgent?.isValid, true, output?.script?.validateSchemaAgent?.error);
 });
