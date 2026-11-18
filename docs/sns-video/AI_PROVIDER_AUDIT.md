@@ -10,7 +10,7 @@
 | 画像生成 | `provider2ImageAgent` / `images` / `image_references` | Google Gemini画像APIのFree Tierは公式料金表で「Not available」。既存Google設定だけでは無料化できない。Cloudflare Workers FreeのFLUX.1 schnellを既存image agent境界に追加 | **最小provider接続を追加** |
 | 画像入力・参照 | `imageParams.images` / `beat.image` / `imageNames` | 元の画像入力・素材使用は維持。FLUX.1 schnellは**テキストから画像のみ**で、参照画像が指定された生成はAPI送信前に明示的エラー。他の参照画像対応モデルや独自画像ファイル入力を削除しない | **元の形式を維持** |
 | I2V / T2V | `provider2MovieAgent.google/replicate`, `moviePrompt` | 既存プロバイダーはAPI有料。継続無料・API・SNS宣伝利用を満たすモデルを未確認。無料と確認できるまで接続しない・動画化済みと呼ばない | **未対応** |
-| 日本語音声 | `provider2TTSAgent`, `audio` | 既存のOpenAI等は有料。VOICEVOX Nemoはローカルで商用可（クレジット「VOICEVOX Nemo」が必要）だが、元MulmoCastのTTSエージェントとの直接連携は未実装。既存音声ファイルの入力は変更しない | **無料TTS接続は未対応** |
+| 日本語音声 | `provider2TTSAgent.gemini`, `ttsGeminiAgent`, `audio` | **Gemini 3.8 Flash TTS / Flash-Lite TTSは公式API Free Tierで入出力無料**。元MulmoCastが既に接続済みなので、無料のGoogle APIキーと `speechParams` の設定のみで使用可能。VOICEVOX Nemoは代替候補で今は追加不要 | **既存設定のみ（実通信未検証）** |
 | 字幕・音声素材・合成・MP4 | 既存 `audio → images → captions → avatar → movie` | 変更不要 | **未変更** |
 
 ## 既存機能を使う最短経路
@@ -56,6 +56,24 @@ export SNS_VIDEO_CLOUDFLARE_FREE_PLAN_CONFIRMED=1
 - 無料契約の確認は利用者の申告であり、自動検証ではない。無料枠切れ・契約違いでは失敗し、有料サービスにはフォールバックしない。
 - Cloudflareの定額・従量課金条件やモデル使用条件は変わり得る。APIキー設定だけで無料と判断しない。
 
+### C: 日本語音声も既存AIの設定だけで無料化
+
+**Google AI Studioで実際のAPIプロジェクトがFree Tierであると確認した場合のみ**、既存の `GEMINI_API_KEY` を設定し、MulmoScriptの `speechParams` に以下を指定する:
+
+```json
+"speechParams": {
+  "speakers": {
+    "Presenter": {
+      "provider": "gemini",
+      "model": "gemini-3.8-flash-tts",
+      "voiceId": "Kore"
+    }
+  }
+}
+```
+
+元MulmoCastの `ttsGeminiAgent` が直接音声を作るため**VOICEVOX連携を追加する必要はない**。Flash-Lite TTS `gemini-3.8-flash-lite-tts` もFree Tierがある。日本語での実音質・API疎通は未検証。GoogleのPaid Tierや不明な請求設定のアカウントで無料と決めつけない。プロジェクト固有の無料レート制限にも従う。
+
 ## 変更範囲と検証
 
 - 元のMulmoCastの `src/types/provider2agent.ts` に選択可能な画像providerを1件追加。
@@ -69,4 +87,6 @@ export SNS_VIDEO_CLOUDFLARE_FREE_PLAN_CONFIRMED=1
 - Cloudflare Workers AI Free（10,000 Neurons/日、Workers Freeでは上限超過後に拒否）: https://developers.cloudflare.com/workers-ai/platform/pricing/
 - FLUX.1 schnell API仕様（`prompt`、`steps`、画像はJPEG/base64）: https://developers.cloudflare.com/workers-ai/models/flux-1-schnell/
 - Google Gemini image API料金（Free Tier不可）: https://ai.google.dev/gemini-api/docs/pricing
-- VOICEVOX Nemo利用規約（クレジット要）: https://voicevox.hiroshiba.jp/nemo/term/
+- Gemini 3.8 TTS Free Tier料金表（入力・音声出力ともFree of charge）: https://ai.google.dev/gemini-api/docs/pricing
+- Gemini TTS公式ガイド: https://ai.google.dev/gemini-api/docs/speech-generation?hl=ja
+- VOICEVOX Nemo利用規約（将来の代替候補）: https://voicevox.hiroshiba.jp/nemo/term/
