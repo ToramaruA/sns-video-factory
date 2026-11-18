@@ -14,14 +14,14 @@ test("native Groq scripting graph passes text and the Zod schema to validation",
   const graphData: GraphData = {
     version: 0.5,
     nodes: {
-      llmAgent: { value: "stubGroqAgent" },
+      llmAgent: { value: "copyAgent" },
       prompt: { value: "a Japanese SNS brief" },
       script: {
         agent: "nestedAgent",
         inputs: { llmAgent: ":llmAgent", prompt: ":prompt" },
         graph: {
           nodes: {
-            llm: { agent: ":llmAgent", inputs: { prompt: ":prompt" } },
+            llm: { agent: ":llmAgent", inputs: { text: responseText } },
             validateSchemaAgent: {
               agent: "validateSchemaAgent",
               inputs: { text: ":llm.text", schema: mulmoScriptSchema },
@@ -34,9 +34,8 @@ test("native Groq scripting graph passes text and the Zod schema to validation",
   };
   const graph = new GraphAI(graphData, {
     ...(agents.default ?? agents),
-    stubGroqAgent: { name: "stubGroqAgent", agent: async () => ({ text: responseText }) },
     validateSchemaAgent,
   });
   const output = await graph.run<{ validateSchemaAgent?: { isValid: boolean; error?: string } }>();
-  assert.equal(output?.script?.validateSchemaAgent?.isValid, true, output?.script?.validateSchemaAgent?.error);
+  assert.equal(output?.script?.validateSchemaAgent?.isValid, true, String(output?.script?.validateSchemaAgent?.error ?? ""));
 });
