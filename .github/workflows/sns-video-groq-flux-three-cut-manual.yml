@@ -7,6 +7,11 @@ on:
         description: 'Describe the SNS video you want (Japanese, max 3500 chars). AI chooses 1-12 shots and timing.'
         type: string
         required: true
+      verify_browser_api:
+        description: 'Run the full Groq/FLUX/MP4 job THROUGH the private browser HTTP API (same single video, no duplicate API requests).'
+        type: boolean
+        required: false
+        default: false
       enable_free_japanese_voice:
         description: 'Use locally run VOICEVOX Nemo Japanese narration (no paid TTS API; requires credit).'
         type: boolean
@@ -42,6 +47,8 @@ jobs:
     timeout-minutes: 25
     env:
       SNS_VIDEO_BRIEF: ${{ inputs.brief }}
+      SNS_VIDEO_WEB_VOICE_ENABLED: ${{ inputs.enable_free_japanese_voice }}
+      SNS_VIDEO_NEMO_CREDIT_CONFIRMED: ${{ inputs.confirm_nemo_credit }}
       SNS_VIDEO_GROQ_FREE_PLAN_CONFIRMED: '1'
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       LLM_GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
@@ -79,12 +86,6 @@ jobs:
         if: inputs.enable_free_japanese_voice == true
         run: |
           test "${{ inputs.confirm_nemo_credit }}" = 'true' || { echo 'VOICEVOX Nemo attribution agreement is required' >&2; exit 1; }
-      - name: Existing GraphAI creates a flexible-cut MulmoScript
-        run: |
-          ./node_modules/.bin/tsx experiments/06-groq-planning/run.ts
-      - name: Preserve plan and make a safe still-only render script
-        run: |
-          ./node_modules/.bin/tsx experiments/07-groq-flux-three-cut/prepare_preview.ts
       - name: Start VOICEVOX Nemo locally (optional CPU TTS, no cloud account)
         if: inputs.enable_free_japanese_voice == true
         run: |
@@ -95,10 +96,19 @@ jobs:
             sleep 3
           done
           test "$ready" = 1 || { docker logs sns-voicevox-nemo; echo 'VOICEVOX Nemo did not start' >&2; exit 1; }
+      - name: Existing GraphAI creates a flexible-cut MulmoScript
+        if: inputs.verify_browser_api != true
+        run: |
+          ./node_modules/.bin/tsx experiments/06-groq-planning/run.ts
+      - name: Preserve plan and make a safe still-only render script
+        if: inputs.verify_browser_api != true
+        run: |
+          ./node_modules/.bin/tsx experiments/07-groq-flux-three-cut/prepare_preview.ts
       - name: Render local WAV narrations and add existing MulmoCast beat.audio references
-        if: inputs.enable_free_japanese_voice == true
+        if: inputs.enable_free_japanese_voice == true && inputs.verify_browser_api != true
         run: python3 experiments/07-groq-flux-three-cut/add_nemo_narration.py
       - name: Original MulmoCast generates all stills and renders portrait MP4
+        if: inputs.verify_browser_api != true
         run: |
           node lib/cli/bin.js movie experiments/07-groq-flux-three-cut/generated/three-cut-preview.json --sns-free-only
           video=output/three-cut-preview_ja.mp4
@@ -106,6 +116,9 @@ jobs:
           dimensions="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$video")"
           test "$dimensions" = "720x1280"
           python3 -c 'import json,subprocess,sys; p=json.load(open(sys.argv[2])); n=len(p["beats"]); expected=sum(b["duration"] for b in p["beats"]); actual=float(subprocess.check_output(["ffprobe","-v","error","-show_entries","format=duration","-of","default=noprint_wrappers=1:nokey=1",sys.argv[1]])); assert 1<=n<=12,(n,expected); assert abs(actual-expected)<1.0,(actual,expected); print(f"PASS: {n} cuts, {actual:.1f}s / requested {expected:.1f}s, portrait MP4 (still images; optional recorded/local Nemo voice)")' "$video" experiments/07-groq-flux-three-cut/generated/three-cut-preview.json
+      - name: Browser HTTP -> real Groq Free + FLUX Free -> MulmoCast MP4 (single live run)
+        if: inputs.verify_browser_api == true
+        run: node scripts/verify-sns-video-browser-live.mjs
       - name: Save plan, still preview and generated images
         if: success()
         uses: actions/upload-artifact@v4

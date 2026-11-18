@@ -29,4 +29,6 @@
 - APIキーはブラウザに渡しません。画面用アクセスキーはWebストレージに保存しません。
 - API認証・二重起動防止・エラー非漏洩のテスト：`node --test scripts/test-sns-video-browser.mjs`（API無し・ダミー出力）。
 - **実際のMulmoCastレンダラーを通すオフライン結合テスト**：`node --test scripts/test-sns-video-browser-real-mp4.mjs`（`yarn build`とFFmpegが必要）。ブラウザHTTPで動画作成を依頼し、元MulmoCastの既存GraphAIモック企画→既存画像処理→720×1280の実MP4→認証付きHTTPダウンロードを確認します。外部LLM・画像・動画APIは使いません。
-- **実際のGroq・Cloudflare・VOICEVOX Nemoによるブラウザからの動画生成は未検証**です。まず小規模なMVPとしてホスト環境を整えた上で実生成を確認します。
+- **実際のGroq・Cloudflare・VOICEVOX Nemoによるブラウザからの動画生成は未検証**です。既存の手動GitHub Actionsで `verify_browser_api` をONにすると、秘密のAPIキーを使って**GitHub Runner内だけのブラウザHTTPから実MP4までの1回の実APIテスト**を実施できます。Groq/Cloudflareのアカウントが実際にFree Planであることを確認してから実行してください。画像を2回生成しないよう通常経路と分岐します。実行はまだ行っていません。
+- 手動実API検証スクリプト：`node scripts/verify-sns-video-browser-live.mjs`。**CIでは静的構文チェックだけ実施**し、Pull Requestやpush時に実APIを呼びません。
+- 別端末からのHTTPSアクセスや常時運用するサーバーの信頼性は未検証です。GitHub Runner内のHTTP検証成功だけで一般公開可能とは判断しません。
