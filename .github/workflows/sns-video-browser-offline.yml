@@ -4,14 +4,14 @@ on:
   pull_request:
     paths:
       - 'scripts/sns-video-browser.*'
-      - 'test/sns_video/test_sns_video_browser.mjs'
+      - 'scripts/test-sns-video-browser.mjs'
       - 'docs/sns-video/BROWSER_MINIMAL.md'
       - '.github/workflows/sns-video-browser-offline.yml'
   push:
     branches: [main]
     paths:
       - 'scripts/sns-video-browser.*'
-      - 'test/sns_video/test_sns_video_browser.mjs'
+      - 'scripts/test-sns-video-browser.mjs'
       - 'docs/sns-video/BROWSER_MINIMAL.md'
       - '.github/workflows/sns-video-browser-offline.yml'
 
@@ -28,4 +28,4 @@ jobs:
         with:
           node-version: '24'
       - name: Test browser entry without any free or paid AI API calls
-        run: node --test test/sns_video/test_sns_video_browser.mjs
+        run: node --test scripts/test-sns-video-browser.mjs
