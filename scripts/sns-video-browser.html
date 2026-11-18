@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="color-scheme" content="light dark" />
+<title>無料MulmoCast | 動画を作る</title>
+<style>
+:root {font-family: system-ui, -apple-system, 'Segoe UI', sans-serif; line-height: 1.6;}
+body {max-width: 690px; padding: 18px; margin: 20px auto;}
+h1 {font-size: 1.6rem; margin-bottom: 0.4rem;}
+.muted {color: #777; font-size: 0.9rem;}
+label {display: block; margin-top: 1.2rem; font-weight: 650;}
+textarea,input[type="password"] {box-sizing: border-box; width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #aaa; border-radius: 8px; font: inherit;}
+textarea {min-height: 140px; resize: vertical;}
+button {margin-top: 1rem; font: inherit; padding: 10px 20px; color: white; background: #2c67b1; border: 0; border-radius: 8px; cursor: pointer;}
+button:disabled {opacity:.6;cursor:default}
+.check {display: flex; align-items: flex-start; gap: 10px; font-weight: 400;}
+.check input {margin-top: 7px}
+#status {margin-top: 1rem; min-height: 1.6rem;}
+a {color: #3273c6; margin-right: 1.3rem;}
+small {color: #777;}
+</style>
+</head>
+<body>
+<h1>無料MulmoCast</h1>
+<p>日本語で作りたい動画を説明すると、AIがカットを考えて静止画から縦型MP4を作ります。無料枠内で停止し、有料APIへ勝手に切り替えません。</p>
+<label for="token">共有されたアクセスキー</label>
+<input type="password" id="token" autocomplete="off" placeholder="サーバー起動時に表示されたキー" />
+<label for="brief">動画にしたい内容</label>
+<textarea id="brief" maxlength="3500" placeholder="例：ピアノとヴァイオリンのコンサートを紹介する、上品で温かな15秒程度のSNS動画を作ってください。"></textarea>
+<label class="check"><input type="checkbox" id="voice" /> 無料の日本語ナレーションを追加する（VOICEVOX Nemoがサーバーで起動している場合）</label>
+<label class="check" id="creditLabel" hidden><input type="checkbox" id="credit" /> 公開時に「VOICEVOX Nemo」とクレジット表記することに同意する</label>
+<button id="generate">動画を生成する</button>
+<p id="status" role="status" aria-live="polite"></p>
+<p id="downloads" hidden><a id="video" href="#">MP4を保存</a><a id="script" href="#">MulmoScriptを保存</a></p>
+<hr />
+<p class="muted">現在の無料版は静止画をつないだ映像です。各カットが実際に動くAI動画生成（I2V）は未対応。1～12カット、合計60秒以内。無料枠の残量や外部サービスの利用規約を保証するものではありません。</p>
+<small>アクセスキーはこのページ内だけで使用し、ブラウザに保存しません。管理者はAPIキーをサーバーで設定してください。</small>
+<script>
+const el = id => document.getElementById(id);
+const voice = el('voice'), credit = el('credit'), status = el('status');
+voice.addEventListener('change', () => {el('creditLabel').hidden = !voice.checked; if(!voice.checked) credit.checked = false;});
+const btn = el('generate');
+const auth = () => ({'Authorization': 'Bearer ' + el('token').value.trim()});
+let timer;
+async function getFile(url, filename) {
+  const response = await fetch(url, {headers: auth(), cache: 'no-store'});
+  if(!response.ok) throw new Error('ダウンロードできませんでした');
+  const blob = await response.blob(), blobUrl = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=blobUrl;a.download=filename;a.click();
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+}
+el('video').addEventListener('click', e=>{e.preventDefault();getFile(el('video').dataset.url, 'sns-video.mp4').catch(e=>status.textContent=e.message)});
+el('script').addEventListener('click', e=>{e.preventDefault();getFile(el('script').dataset.url, 'mulmo-plan.json').catch(e=>status.textContent=e.message)});
+btn.addEventListener('click', async () => {
+  clearTimeout(timer);el('downloads').hidden=true;btn.disabled=true;
+  status.textContent='リクエストを送信しています…';
+  try {
+    const response = await fetch('/api/jobs', {method:'POST',headers:{...auth(),'Content-Type':'application/json'},body:JSON.stringify({brief:el('brief').value,voice:voice.checked,confirmNemoCredit:credit.checked})});
+    const data = await response.json();
+    if(!response.ok) throw new Error(data.error || '生成を開始できませんでした');
+    const id = data.id;
+    async function poll() {
+      const res = await fetch('/api/jobs/'+id, {headers:auth(),cache:'no-store'});
+      const state = await res.json();
+      if(!res.ok) throw new Error(state.error || '進捗を取得できませんでした');
+      status.textContent = state.step;
+      if(state.state==='done') {
+        el('video').dataset.url='/api/jobs/'+id+'/video';
+        el('script').dataset.url='/api/jobs/'+id+'/script';
+        el('downloads').hidden=false;btn.disabled=false;return;
+      }
+      if(state.state==='failed') throw new Error(state.error || '生成に失敗しました');
+      timer=setTimeout(()=>poll().catch(onError),2500);
+    }
+    await poll();
+  } catch(error) {onError(error)}
+});
+function onError(error) {status.textContent=error.message;btn.disabled=false;}
+</script>
+</body>
+</html>
