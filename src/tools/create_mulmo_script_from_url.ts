@@ -259,7 +259,9 @@ export const createMulmoScriptFromUrl = async ({ urls, templateName, outDirPath,
 
   const result = await graph.run<{ path: string }>();
   if (!result?.writeJSON?.path) {
-    if (process.env.SNS_VIDEO_FREE_ONLY === "1") { throw new Error("MulmoCast scripting could not produce schema-valid MulmoScript after 3 attempts; check validation diagnostics above."); }
+    if (process.env.SNS_VIDEO_FREE_ONLY === "1") {
+      throw new Error("MulmoCast scripting could not produce schema-valid MulmoScript after 3 attempts; check validation diagnostics above.");
+    }
     showErrorMessage("Script generation failed. Please try again.");
     return;
   }
@@ -305,7 +307,9 @@ export const createMulmoScriptFromFile = async (
   graph.registerCallback(createUsageCallback(usageCollector));
   const result = await graph.run<{ path: string }>();
   if (!result?.writeJSON?.path) {
-    if (process.env.SNS_VIDEO_FREE_ONLY === "1") { throw new Error("MulmoCast scripting could not produce schema-valid MulmoScript after 3 attempts; check validation diagnostics above."); }
+    if (process.env.SNS_VIDEO_FREE_ONLY === "1") {
+      throw new Error("MulmoCast scripting could not produce schema-valid MulmoScript after 3 attempts; check validation diagnostics above.");
+    }
     showErrorMessage("Script generation failed. Please try again.");
     return;
   }
