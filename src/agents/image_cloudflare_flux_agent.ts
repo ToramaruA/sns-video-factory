@@ -2,11 +2,7 @@ import { createHash } from "node:crypto";
 import { spawn } from "node:child_process";
 import { readFile, stat } from "node:fs/promises";
 import { type AgentFunction, type AgentFunctionInfo } from "graphai";
-import {
-  assertCloudflareFreePlanConfigured,
-  CLOUDFLARE_FLUX_MODEL,
-  CLOUDFLARE_FLUX_REFERENCE_MODEL,
-} from "../sns-video/safety/cloudflare_free_plan.js";
+import { assertCloudflareFreePlanConfigured, CLOUDFLARE_FLUX_MODEL, CLOUDFLARE_FLUX_REFERENCE_MODEL } from "../sns-video/safety/cloudflare_free_plan.js";
 
 /** Only two Cloudflare Workers AI models are enabled; never silently switch to paid providers. */
 type CloudflareModel = typeof CLOUDFLARE_FLUX_MODEL | typeof CLOUDFLARE_FLUX_REFERENCE_MODEL;
@@ -16,7 +12,6 @@ const JPEG_HEADER = Buffer.from([0xff, 0xd8, 0xff]);
 
 const isPng = (data: Buffer) => data.subarray(0, PNG_HEADER.length).equals(PNG_HEADER);
 const isJpeg = (data: Buffer) => data.subarray(0, JPEG_HEADER.length).equals(JPEG_HEADER);
-const imageType = (data: Buffer) => (isPng(data) ? "png" : isJpeg(data) ? "jpeg" : "unsupported");
 
 const assertModel = (value?: string): CloudflareModel => {
   const model = value ?? CLOUDFLARE_FLUX_REFERENCE_MODEL;
@@ -35,6 +30,8 @@ const ffmpegToPng = async (bytes: Buffer, resizeReference: boolean): Promise<Buf
       args.push("-vf", "scale=510:510:force_original_aspect_ratio=decrease");
     }
     args.push("-frames:v", "1", "-f", "image2pipe", "-vcodec", "png", "pipe:1");
+    // FFmpeg is an existing MulmoCast system dependency; arguments are fixed and no shell is used.
+    // eslint-disable-next-line sonarjs/no-os-command-from-path
     const child = spawn("ffmpeg", args, { signal: AbortSignal.timeout(45_000) });
     const chunks: Buffer[] = [];
     let size = 0;
@@ -44,7 +41,9 @@ const ffmpegToPng = async (bytes: Buffer, resizeReference: boolean): Promise<Buf
       if (size > 12_000_000) child.kill();
       else chunks.push(chunk);
     });
-    child.stderr.on("data", (chunk: Buffer) => { error += chunk.toString().slice(0, 512); });
+    child.stderr.on("data", (chunk: Buffer) => {
+      error += chunk.toString().slice(0, 512);
+    });
     child.on("error", reject);
     child.on("close", (code) => {
       if (code !== 0 || size > 12_000_000) {
@@ -91,7 +90,7 @@ export const generateCloudflareFluxImage = async (
     throw new Error("Cloudflare image prompt must contain 1–2048 characters");
   }
   const canvas = options.canvasSize;
-  if (canvas && (![canvas.width, canvas.height].every((v) => Number.isInteger(v) && v >= 256 && v <= 1920))) {
+  if (canvas && ![canvas.width, canvas.height].every((v) => Number.isInteger(v) && v >= 256 && v <= 1920)) {
     throw new Error("Cloudflare image canvas dimensions must be integers between 256 and 1920");
   }
 
@@ -151,11 +150,15 @@ export const imageCloudflareFluxAgent: AgentFunction = async ({ namedInputs, par
   const canvasSize = params.canvasSize as { width: number; height: number } | undefined;
   const outputFile = (namedInputs.cache as { file?: string } | undefined)?.file ?? "";
   // Use image paths plus file metadata, not only the text prompt, to prevent wrong reuse.
-  const refSignature = await Promise.all((referenceImages ?? []).map(async (file) => {
-    const info = await stat(file);
-    return [file, info.size, info.mtimeMs];
-  }));
-  const key = createHash("sha256").update(JSON.stringify([accountId, model, outputFile, prompt, canvasSize, refSignature])).digest("hex");
+  const refSignature = await Promise.all(
+    (referenceImages ?? []).map(async (file) => {
+      const info = await stat(file);
+      return [file, info.size, info.mtimeMs];
+    }),
+  );
+  const key = createHash("sha256")
+    .update(JSON.stringify([accountId, model, outputFile, prompt, canvasSize, refSignature]))
+    .digest("hex");
   let pending = submitted.get(key);
   if (!pending) {
     pending = generateCloudflareFluxImage(prompt, { model, referenceImages, canvasSize, env });
