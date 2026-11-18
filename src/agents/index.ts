@@ -3,6 +3,7 @@ import combineAudioFilesAgent from "./combine_audio_files_agent.js";
 import imageGenAIAgent from "./image_genai_agent.js";
 import imageOpenaiAgent from "./image_openai_agent.js";
 import imageReplicateAgent from "./image_replicate_agent.js";
+import imageCloudflareFluxAgent from "./image_cloudflare_flux_agent.js";
 import tavilySearchAgent from "./tavily_agent.js";
 import movieGenAIAgent from "./movie_genai_agent.js";
 import movieReplicateAgent from "./movie_replicate_agent.js";
@@ -34,6 +35,7 @@ export {
   imageGenAIAgent,
   imageOpenaiAgent,
   imageReplicateAgent,
+  imageCloudflareFluxAgent,
   tavilySearchAgent,
   movieGenAIAgent,
   movieReplicateAgent,
