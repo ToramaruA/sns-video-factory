@@ -1,4 +1,4 @@
-name: Free MulmoCast - 3カット動画試作（手動のみ）
+name: Free MulmoCast - 3カット動画試作（初期値は3本すべて動画化）
 
 on:
   workflow_dispatch:
@@ -7,7 +7,7 @@ on:
         description: 'three_cut: 1 moving; three_all_moving: 3 moving; one_cut: 1 moving.'
         type: choice
         required: true
-        default: three_cut
+        default: three_all_moving
         options:
           - three_cut
           - three_all_moving
@@ -36,7 +36,7 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  single-moving-cut:
+  render-beats:
     if: inputs.confirm_cloudflare_free_plan == true && inputs.confirm_zerogpu_trial == true && inputs.confirm_third_party_demo_upload == true
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -80,7 +80,7 @@ jobs:
           yarn build
           python3 -m venv .venv
           .venv/bin/python -m pip install --disable-pip-version-check gradio_client==2.7.2
-      - name: Original MulmoCast renders three beats, with exactly one Wan movie generation
+      - name: Original MulmoCast renders requested moving cuts without paid video APIs
         run: |
           case "$RENDER_MODE" in
             three_cut) name=experimental-three-cut-one-moving ;;
