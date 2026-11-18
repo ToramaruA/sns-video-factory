@@ -4,7 +4,7 @@ import { readFileSync } from "node:fs";
 import { GraphAI, type GraphData } from "graphai";
 import * as agents from "@graphai/vanilla";
 import validateSchemaAgent from "../../src/agents/validate_schema_agent.js";
-import { mulmoScriptSchema } from "../../src/types/schema.js";
+
 
 // Exercise the same nested GraphAI validation data path used by MulmoCast's
 // native "tool scripting", without a Groq call or any paid API.
@@ -25,7 +25,7 @@ test("native Groq scripting graph passes text and the Zod schema to validation",
             llm: { agent: ":llmAgent", inputs: { text: responseText } },
             validateSchemaAgent: {
               agent: "validateSchemaAgent",
-              inputs: { text: ":llm.text", schema: mulmoScriptSchema },
+              inputs: { text: ":llm.text", schemaName: "mulmoScript" },
               isResult: true,
             },
           },
