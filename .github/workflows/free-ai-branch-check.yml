@@ -26,3 +26,7 @@ jobs:
         run: yarn typecheck:test
       - name: Targeted free-AI image tests (offline)
         run: ./node_modules/.bin/tsx --test test/agents/test_image_cloudflare_flux_free.ts test/agents/test_free_cli_guard.ts
+      - name: Existing MulmoCast reference image and movie regression tests
+        run: ./node_modules/.bin/tsx --test test/actions/test_image_reference_params.ts test/methods/test_image_prompt_media.ts test/zod/test_image_references_schema.ts test/methods/test_presentation_style_movie.ts
+      - name: Lint
+        run: yarn lint
