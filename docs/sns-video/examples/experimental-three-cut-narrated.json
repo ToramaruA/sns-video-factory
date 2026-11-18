@@ -1,0 +1,66 @@
+{
+  "$mulmocast": {
+    "version": "1.1"
+  },
+  "title": "無料SNS動画試作・3カット日本語ナレーション",
+  "lang": "ja",
+  "canvasSize": {
+    "width": 720,
+    "height": 1280
+  },
+  "speechParams": {
+    "speakers": {
+      "Presenter": {
+        "provider": "gemini",
+        "model": "gemini-3.8-flash-tts",
+        "voiceId": "Kore"
+      }
+    }
+  },
+  "audioParams": {
+    "suppressSpeech": false,
+    "introPadding": 0,
+    "outroPadding": 0,
+    "padding": 0,
+    "closingPadding": 0,
+    "ttsVolume": 1
+  },
+  "captionParams": {
+    "lang": "ja"
+  },
+  "beats": [
+    {
+      "speaker": "Presenter",
+      "text": "クリスマスの夜。",
+      "image": {
+        "type": "movie",
+        "source": {
+          "kind": "path",
+          "path": "./narrated-assets/0.mov"
+        }
+      }
+    },
+    {
+      "speaker": "Presenter",
+      "text": "音楽が、動き出す。",
+      "image": {
+        "type": "movie",
+        "source": {
+          "kind": "path",
+          "path": "./narrated-assets/1.mov"
+        }
+      }
+    },
+    {
+      "speaker": "Presenter",
+      "text": "あなたも、この場所へ。",
+      "image": {
+        "type": "movie",
+        "source": {
+          "kind": "path",
+          "path": "./narrated-assets/2.mov"
+        }
+      }
+    }
+  ]
+}
