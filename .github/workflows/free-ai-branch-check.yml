@@ -25,4 +25,4 @@ jobs:
       - name: Typecheck tests
         run: yarn typecheck:test
       - name: Targeted free-AI image tests (offline)
-        run: ./node_modules/.bin/tsx --test test/agents/test_image_cloudflare_flux_free.ts
+        run: ./node_modules/.bin/tsx --test test/agents/test_image_cloudflare_flux_free.ts test/agents/test_free_cli_guard.ts
