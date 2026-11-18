@@ -176,7 +176,7 @@ jobs:
         if: inputs.render_mode == 'narrated_from_artifact'
         run: |
           node lib/cli/bin.js movie docs/sns-video/examples/experimental-three-cut-narrated.json
-          video="output/experimental-three-cut-narrated_ja.mp4"
+          video="output/experimental-three-cut-narrated_ja__ja.mp4"
           test -s "$video"
           dimensions="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$video")"
           test "$dimensions" = "720x1280"
@@ -191,7 +191,7 @@ jobs:
           name: free-mulmocast-three-cut-japanese-narrated
           path: |
             docs/sns-video/examples/experimental-three-cut-narrated.json
-            output/experimental-three-cut-narrated_ja.mp4
+            output/experimental-three-cut-narrated_ja__ja.mp4
           if-no-files-found: error
           retention-days: 3
       - name: Save the rendered MP4 and all generated frames
