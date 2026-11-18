@@ -190,6 +190,14 @@ type GoogleMovieModelParams = {
 };
 
 export const provider2MovieAgent = {
+  // One-cut prototype only: third-party ZeroGPU demo; not an approved commercial backend.
+  wan22_trial: {
+    agentName: "movieWan22ZeroGpuAgent",
+    defaultModel: "wan2.2-i2v",
+    models: ["wan2.2-i2v"],
+    keyName: "",
+    modelParams: {},
+  },
   replicate: {
     agentName: "movieReplicateAgent",
     defaultModel: "bytedance/seedance-1-lite" as ReplicateModel,
