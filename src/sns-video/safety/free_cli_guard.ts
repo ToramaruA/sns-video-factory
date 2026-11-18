@@ -17,7 +17,8 @@ export const assertSnsFreeMode = (context: MulmoStudioContext, action: FreeActio
   // Explicit prototype exception: exactly ONE 2-second Wan demo request. The image is
   // generated through the existing Cloudflare provider. This is not commercial approval.
   // Without BOTH separate opt-ins, all moviePrompt generation stays forbidden.
-  const onlyBeat = script.beats.length === 1 ? script.beats[0] : undefined;
+  const movieBeats = script.beats.filter((beat) => Boolean(beat.moviePrompt));
+  const onlyBeat = movieBeats.length === 1 ? movieBeats[0] : undefined;
   const demoMovieParams = { ...style.movieParams, ...onlyBeat?.movieParams };
   const allowWanDemo =
     action === "movie" &&
