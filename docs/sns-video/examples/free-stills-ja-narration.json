@@ -5,7 +5,7 @@
   "canvasSize": { "width": 720, "height": 1280 },
   "imageParams": {
     "provider": "cloudflare_free",
-    "model": "@cf/black-forest-labs/flux-1-schnell",
+    "model": "@cf/black-forest-labs/flux-2-klein-4b",
     "style": "Cinematic warm lighting, refined concert photography, vertical composition"
   },
   "speechParams": {
