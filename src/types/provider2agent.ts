@@ -152,6 +152,12 @@ export const provider2ImageAgent = {
     ],
     keyName: "REPLICATE_API_TOKEN",
   },
+  cloudflare_free: {
+    agentName: "imageCloudflareFluxAgent",
+    defaultModel: "@cf/black-forest-labs/flux-1-schnell",
+    models: ["@cf/black-forest-labs/flux-1-schnell"],
+    keyName: "CLOUDFLARE_API_TOKEN",
+  },
   mock: {
     agentName: "mediaMockAgent",
     defaultModel: "mock-model",
