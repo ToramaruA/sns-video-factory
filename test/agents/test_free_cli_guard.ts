@@ -126,6 +126,11 @@ test("Wan prototype only permits the single moving cut with both opt-ins", () =>
       assert.doesNotThrow(() => assertSnsFreeMode(ctx, "movie"));
       assert.throws(() => assertSnsFreeMode(ctx, "images"), /movie/);
 
+      // The standard MulmoCast beat sequence may include two still-only cuts.
+      const still = { text: "", duration: 2, imagePrompt: "A festive concert stage" };
+      const threeCuts = makeContext([still, beat, still], { movieParams, audioParams: { suppressSpeech: true } });
+      assert.doesNotThrow(() => assertSnsFreeMode(threeCuts, "movie"));
+
       const tooMany = makeContext([beat, beat], { movieParams, audioParams: { suppressSpeech: true } });
       assert.throws(() => assertSnsFreeMode(tooMany, "movie"), /movie/);
 
