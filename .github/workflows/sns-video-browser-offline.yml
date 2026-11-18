@@ -4,6 +4,7 @@ on:
   pull_request:
     paths:
       - 'scripts/sns-video-browser.*'
+      - 'scripts/sns-video-browser-live-smoke.mjs'
       - 'scripts/test-sns-video-browser.mjs'
       - 'scripts/test-sns-video-browser-real-mp4.mjs'
       - 'experiments/04-offline-e2e/**'
@@ -13,6 +14,7 @@ on:
     branches: [main]
     paths:
       - 'scripts/sns-video-browser.*'
+      - 'scripts/sns-video-browser-live-smoke.mjs'
       - 'scripts/test-sns-video-browser.mjs'
       - 'scripts/test-sns-video-browser-real-mp4.mjs'
       - 'experiments/04-offline-e2e/**'
@@ -32,7 +34,9 @@ jobs:
         with:
           node-version: '24'
       - name: Test browser entry without any free or paid AI API calls
-        run: node --test scripts/test-sns-video-browser.mjs
+        run: |
+          node --test scripts/test-sns-video-browser.mjs
+          node --check scripts/sns-video-browser-live-smoke.mjs
 
   browser-real-mp4-offline:
     runs-on: ubuntu-latest
