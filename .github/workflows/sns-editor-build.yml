@@ -1,0 +1,62 @@
+name: SNS MulmoCast browser editor (official BeatListEditor)
+
+on:
+  push:
+    branches:
+      - restart/mulmocast-upstream-free-ai
+    paths:
+      - 'sns-editor/**'
+      - 'docs/sns-video/examples/experimental-three-cut-onepass-narrated.json'
+      - '.github/workflows/sns-editor-build.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install only the official browser editor and its Vue host
+        run: npm --prefix sns-editor install --no-audit --no-fund
+      - name: Build static browser editor (no API calls, secrets or backend)
+        run: npm --prefix sns-editor run build
+      - name: Verify static output
+        run: |
+          test -s sns-editor/dist/index.html
+          test -d sns-editor/dist/assets
+          echo 'PASS: original MulmoCast BeatListEditor wrapped and built into a static browser app'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sns-beat-editor-static
+          path: sns-editor/dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  deploy-pages:
+    if: github.event_name == 'workflow_dispatch'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: sns-beat-editor-static
+          path: dist/
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/
+      - id: deploy
+        uses: actions/deploy-pages@v4
