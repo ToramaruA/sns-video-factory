@@ -75,7 +75,7 @@ async function route(req,env){
     if(new TextEncoder().encode(text).length>100000)fail(413,"Payload too large");
     let body;try{body=JSON.parse(text)}catch{fail(400,"Invalid JSON")}
     const inputs=workflowInputs(body);
-    const res=await gh(env,"/actions/workflows/"+WORKFLOW+"/dispatches",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({ref:BRANCH,inputs})});
+    const res=await gh(env,"/actions/workflows/"+WORKFLOW+"/dispatches",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({ref:BRANCH,inputs,return_run_details:true})});
     if(res.status!==200)fail(502,"GitHub accepted the trigger but returned no run ID. Check Actions before retrying");
     const data=await res.json();
     if(!numericId(String(data.workflow_run_id)))fail(502,"Missing workflow run ID; check Actions before retrying");
