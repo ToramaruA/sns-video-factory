@@ -2,6 +2,7 @@
 import { computed, ref } from "vue";
 import { BeatListEditor, defaultBeatEditors, beatsOf, withBeats } from "@mulmocast/beat-editor";
 import PromptBeatEditor from "./PromptBeatEditor.vue";
+import LiveGeneration from "./LiveGeneration.vue";
 import starterScript from "../../docs/sns-video/examples/experimental-three-cut-onepass-narrated.json";
 
 const ACTION_URL = "https://github.com/ToramaruA/sns-video-factory/actions/workflows/sns-video-groq-flux-three-cut-manual.yml";
@@ -141,7 +142,8 @@ const applyRaw = () => {
         <button type="button" class="action-button secondary" @click="copyBrief">企画文をコピー</button>
         <a class="plain-link" :href="ACTION_URL" target="_blank" rel="noopener noreferrer">Groqで台本を生成（GitHub Actions）</a>
       </div>
-      <p class="info">Actionsの <code>brief</code> 欄に貼り、<code>script_json</code> と <code>script_path</code> は空欄、<code>render_movie</code> はOFF。生成されたMulmoScriptをダウンロードして、次の「JSONファイルを読み込む」で編集します。企画文を使わない場合は下から開始できます。</p>
+      <p class="info">GitHub Pagesでは手動のActions操作が必要です。保護されたCloudflare版では次のボタンから直接台本を生成できます。</p>
+      <LiveGeneration mode="plan" :brief="brief" @loaded="setScript" />
     </section>
 
     <section class="sns-toolbar">
@@ -195,7 +197,8 @@ const applyRaw = () => {
         <button type="button" class="action-button secondary" @click="downloadJson">JSONを保存</button>
         <a class="action-button github" :href="ACTION_URL" target="_blank" rel="noopener noreferrer">GitHub Actionsで動画生成</a>
       </div>
-      <p class="info">GitHub Actionsでは <code>script_json</code> にコピーしたJSONを貼り、<code>render_movie</code> をONにします。無料アカウントと外部送信の確認項目に同意できる場合だけONにしてください。<code>script_path</code> は空欄にします。</p>
+      <p class="info">GitHub Pagesで手動実行する場合は <code>script_json</code> にコピーしたJSONを貼り、<code>render_movie</code> をONにします。<code>script_path</code> は空欄です。</p>
+      <LiveGeneration mode="render" :script="script" />
       <p v-if="message" class="message" role="status">{{ message }}</p>
     </section>
     <footer class="sns-footer">このページは編集のみ。台本の内容・APIキーはこの画面からサーバーに送信しません。動画素材ファイル自体のアップロードは未対応です。</footer>

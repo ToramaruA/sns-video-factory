@@ -54,3 +54,15 @@ h1 { font-size: clamp(26px, 4vw, 34px); font-weight: 760; margin: 0 0 9px; lette
 }
 
 .brief-input { width: 100%; border: 1px solid #cedbe0; border-radius: 7px; padding: 12px; font: 13px/1.7 inherit; line-height: 1.7; resize: vertical; margin-bottom: 12px; }
+
+.live-generation { border-top: 1px solid #d9e5e9; margin-top: 16px; padding-top: 16px; }
+.live-generation > div > button { margin-top: 10px; }
+.live-consent { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; font-size: 12px; line-height: 1.65; color: #304c5b; cursor: pointer; }
+.live-consent input { margin-top: 4px; flex: none; }
+.live-warning { font-size: 12px; background: #f2f5f6; padding: 11px 12px; margin: 0 0 14px; line-height: 1.7; border-radius: 6px; }
+.live-link { font-size: 12px; margin: 12px 0; }
+.live-link a { color: #2b607d; }
+.live-preview { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-top: 14px; }
+.live-preview video { display: block; width: min(100%, 300px); max-height: 520px; background: #0e1721; border-radius: 8px; }
+.live-preview .action-button { align-self: flex-start; }
+.action-button:disabled { opacity: 0.52; cursor: wait; }
