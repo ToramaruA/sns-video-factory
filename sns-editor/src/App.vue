@@ -10,6 +10,7 @@ const copy = (value) => JSON.parse(JSON.stringify(value));
 const script = ref(copy(starterScript));
 const cuts = computed(() => beatsOf(script.value));
 const message = ref("");
+const brief = ref("");
 const pastedText = ref("");
 const showPaste = ref(false);
 const showRaw = ref(false);
@@ -69,6 +70,18 @@ const updateTitle = (event) => {
 };
 
 const exportJson = () => JSON.stringify(script.value, null, 2) + "\n";
+const copyBrief = async () => {
+  if (!brief.value.trim()) {
+    message.value = "まず企画の文章を入力してください。";
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(brief.value.trim());
+    message.value = "企画文をコピーしました。GitHub Actionsのbrief欄に貼り、render_movie=OFFで台本を生成してください。";
+  } catch {
+    message.value = "企画文をコピーできませんでした。テキストを選択して手動でコピーしてください。";
+  }
+};
 const copyJson = async () => {
   const json = exportJson();
   if (json.length > 60000) {
@@ -117,6 +130,19 @@ const applyRaw = () => {
       </div>
       <span class="demo-mark">ローカル編集・APIキー不要</span>
     </header>
+
+    <section class="sns-toolbar">
+      <div class="step-head">
+        <strong><span class="step">0</span> 企画文から始める（任意）</strong>
+        <span>既存MulmoCastのGroq無料台本生成を使用</span>
+      </div>
+      <textarea class="brief-input" v-model="brief" rows="3" maxlength="2000" placeholder="例：12月の室内楽コンサートを紹介する15秒の縦型SNS動画。温かく上品な雰囲気。"></textarea>
+      <div class="toolbar-actions">
+        <button type="button" class="action-button secondary" @click="copyBrief">企画文をコピー</button>
+        <a class="plain-link" :href="ACTION_URL" target="_blank" rel="noopener noreferrer">Groqで台本を生成（GitHub Actions）</a>
+      </div>
+      <p class="info">Actionsの <code>brief</code> 欄に貼り、<code>script_json</code> と <code>script_path</code> は空欄、<code>render_movie</code> はOFF。生成されたMulmoScriptをダウンロードして、次の「JSONファイルを読み込む」で編集します。企画文を使わない場合は下から開始できます。</p>
+    </section>
 
     <section class="sns-toolbar">
       <div class="step-head">
