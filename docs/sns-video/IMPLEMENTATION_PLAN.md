@@ -75,6 +75,8 @@
 
 ## 7. 進捗と今後の実装順序（2026-11-19、実動作確認に基づく）
 
+> **2026-11-19 追記 — ブラウザ編集の最小実装:** 公式 `@mulmocast/beat-editor` と `beatsOf/withBeats` を再利用する薄いVueホスト `sns-editor/` を作成。元MulmoScriptの全フィールドを維持し、カットのtext・imagePrompt・moviePrompt・speakerの編集、JSONファイルの入力・保存・クリップボード書き出しを提供する。ビルドは [GitHub Actions #44493617708](https://github.com/ToramaruA/sns-video-factory/actions/runs/44493617708) で成功。既存の動画ワークフローには、ファイルコミットなしで完成済みJSONを指定する `script_json` 入力も追加し、AIを呼ばない検証は [#44492862798](https://github.com/ToramaruA/sns-video-factory/actions/runs/44492862798) で成功。静的ページの公開と実ブラウザでの操作確認は未完了。編集画面からの動画生成は現時点では「JSONをコピー→GitHub Actionsに貼り付ける」2段階。直接起動・写真アップロード・ログイン不要の複数人共有は未実装であり、バックエンドと権限設計を勝手に追加しない。実装・公開手順と制限は [BROWSER_EDITOR.md](./BROWSER_EDITOR.md) を参照。
+
 > **2026-11-19 現在の結論（更新）:** 企画文→3カット動画の一括実API生成は [44351718878](https://github.com/ToramaruA/sns-video-factory/actions/runs/44351718878) で成功。**元の `mulmo movie <script.json>` は編集済み台本をそのまま実行できる既存機能**。GitHub Actionsの既存ワークフローに `script_path` を追加し、リポジトリへ保存したJSONを指定した場合はGroqを完全にスキップする。追加の動画制作基盤やGUIは不要。入力経路のコード追加・CI確認と、独自編集ファイルによる手動実API検証は区別する。現行Wan公開ZeroGPUデモは用途と安定性の確認が済んでいないため**試作扱い**。直近は (a) `script_path` 経路の確認、(b) 商用/継続運用の条件確定、(c) 必要な品質調整、の順。古い「未実装」「未検証」の記述は後続の実績を優先する。
 
 ### 現在地: 3カットのサンプル完成。ただし汎用的な一括制作ツールは未完成。
