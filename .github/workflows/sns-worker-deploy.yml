@@ -1,0 +1,60 @@
+name: SNS Cloudflare browser generation — manual secure deployment
+on:
+  workflow_dispatch:
+    inputs:
+      activate_secure_api:
+        type: boolean
+        description: 'OFF: deploy disabled API. ON: after configuring Cloudflare Access and GitHub PAT, enable it.'
+        required: false
+        default: false
+permissions:
+  contents: read
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/restart/mulmocast-upstream-free-ai'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.SNS_CF_WORKER_DEPLOY_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Require Cloudflare deployment credentials
+        run: |
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing SNS_CF_WORKER_DEPLOY_TOKEN" >&2; exit 1; }}
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Missing CLOUDFLARE_ACCOUNT_ID" >&2; exit 1; }}
+      - name: Build original browser editor with root assets
+        run: |
+          npm --prefix sns-editor install --no-audit --no-fund
+          PUBLIC_BASE_PATH=/ npm --prefix sns-editor run build
+      - name: Check secure relay offline
+        run: |
+          npm --prefix sns-worker install --no-audit --no-fund
+          npm --prefix sns-worker test
+          npm --prefix sns-worker run check
+      - name: Deploy Worker with API disabled until secrets and Access are configured
+        run: ./sns-worker/node_modules/.bin/wrangler deploy --config sns-worker/wrangler.json
+      - name: Verify activation secrets are present
+        if: inputs.activate_secure_api == true
+        env:
+          PAT: ${{ secrets.SNS_GITHUB_ACTIONS_PAT }}
+          TEAM: ${{ secrets.SNS_CF_ACCESS_TEAM_DOMAIN }}
+          AUD: ${{ secrets.SNS_CF_ACCESS_AUD }}
+        run: |
+          test -n "$PAT" || { echo "Missing SNS_GITHUB_ACTIONS_PAT" >&2; exit 1; }}
+          test -n "$TEAM" || { echo "Missing SNS_CF_ACCESS_TEAM_DOMAIN" >&2; exit 1; }}
+          test -n "$AUD" || { echo "Missing SNS_CF_ACCESS_AUD" >&2; exit 1; }}
+      - name: Configure Cloudflare Worker secrets
+        if: inputs.activate_secure_api == true
+        env:
+          PAT: ${{ secrets.SNS_GITHUB_ACTIONS_PAT }}
+          TEAM: ${{ secrets.SNS_CF_ACCESS_TEAM_DOMAIN }}
+          AUD: ${{ secrets.SNS_CF_ACCESS_AUD }}
+        run: |
+          printf '%s' "$PAT" | ./sns-worker/node_modules/.bin/wrangler secret put GITHUB_ACTIONS_PAT --config sns-worker/wrangler.json
+          printf '%s' "$TEAM" | ./sns-worker/node_modules/.bin/wrangler secret put CF_ACCESS_TEAM_DOMAIN --config sns-worker/wrangler.json
+          printf '%s' "$AUD" | ./sns-worker/node_modules/.bin/wrangler secret put CF_ACCESS_AUD --config sns-worker/wrangler.json
+          echo "Secure relay configured; Access JWT remains mandatory"
