@@ -1,5 +1,16 @@
 # AI接続の監査・最小実装（2026-11-18）
 
+## 2026-11-19（追記）一括成功後の利用条件と残る判断
+
+- **実API確認済み:** 元のMulmoCast標準 `tool scripting` + Groq Free `openai/gpt-oss-20b` → 3カットMulmoScript → Cloudflare Workers AI FLUX.2 Klein → Wan 2.2 I2V → Gemini 3.8 Flash TTS → 字幕・音声付きMP4を1回のGitHub Actions実行で完了。[実行44351718878](https://github.com/ToramaruA/sns-video-factory/actions/runs/44351718878)。以下の古い「未対応」「未検証」行より、この結果を優先する。
+- **完成済み台本:** 既存の `mulmo movie <script.json>` は、LLMを経由しない正式な入力経路。一括生成のサンプルでも動作済み。GitHub Actions `sns-video-groq-flux-three-cut-manual.yml` に任意の**リポジトリ管理下のJSONファイルパス**を指定する `script_path` 入力を追加。指定時はGroqを呼ばない。ユーザー編集した独自ファイルを指定する手動テストはまだ未実施。既存のMulmoScript形式は変更しない。
+- **Wanモデル自体:** [Wan2.2公式モデルカード](https://huggingface.co/Wan-AI/Wan2.2-I2V-A14B)はApache-2.0ライセンス。モデルのライセンスと、他人が運営する無料サービスの利用許可は**別**。
+- **現行の実行先:** `zerogpu-aoti/wan2-2-fp8da-aoti-faster` という第三者Hugging Face公開Space。 [Space README](https://huggingface.co/spaces/zerogpu-aoti/wan2-2-fp8da-aoti-faster/blob/main/README.md)には商用の大量自動制作を明示的に許可する文面は確認できない。[Hugging Face公式Spaces APIガイド](https://huggingface.co/docs/hub/spaces-api-endpoints)はGradio SpaceをAPIから呼べるとし、ZeroGPUに日次利用枠（匿名2分、Freeアカウント5分、PRO40分）を設ける。匿名枠は共有・制限が厳しく、無料で**継続的に大量生成できることは保証されない**。
+- **今回の実装判断:** **試作に限り継続**し、宣伝用途・複数利用者への安定公開にWan公開デモを正式採用したとは扱わない。権利と継続的利用の条件をSpace運営者に確認するか、条件を満たす別の無料実行先を探す。ユーザーの承諾がないまま有料サービスに切り替えない。動画生成は現在2秒×最大3カット（サーバー側の最大長とは別に、安全な試験のためアダプター側で制限）。
+- **品質:** 動画尺・字幕の同期や人物一貫性はここまでの成功で品質合格したわけではなく、実映像での確認が必要。
+
+---
+
 > **注意（2026-11-19）:** この文書の旧一覧は2026-11-18時点の監査記録です。I2V「未対応」やTTS「実通信未検証」といった記述は、その後の試作成功を反映していません。最新の実績と次の判断は以下、および [IMPLEMENTATION_PLAN.md の第7節](./IMPLEMENTATION_PLAN.md) を参照してください。
 
 ## 2026-11-19 実APIで確認した最新状態
