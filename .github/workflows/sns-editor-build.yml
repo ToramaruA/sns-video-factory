@@ -24,6 +24,25 @@ jobs:
           node-version: '24'
       - name: Install only the official browser editor and its Vue host
         run: npm --prefix sns-editor install --no-audit --no-fund
+      - name: Verify native MulmoScript round-trip preserves configuration
+        working-directory: sns-editor
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          import { beatsOf, withBeats } from '@mulmocast/beat-editor';
+          const original = JSON.parse(fs.readFileSync('../docs/sns-video/examples/experimental-three-cut-onepass-narrated.json','utf8'));
+          const edits = beatsOf(original).map((beat, i) =>
+            i === 0 ? { ...beat, text: '編集済み', moviePrompt: 'Camera pans slightly' } : beat
+          );
+          const edited = withBeats(original, edits);
+          assert.equal(edited.beats[0].text, '編集済み');
+          assert.equal(edited.beats[0].moviePrompt, 'Camera pans slightly');
+          assert.deepEqual(Object.fromEntries(Object.entries(edited).filter(([k]) => k !== 'beats')),
+            Object.fromEntries(Object.entries(original).filter(([k]) => k !== 'beats')));
+          assert.equal(edited.beats[1].imagePrompt, original.beats[1].imagePrompt);
+          console.log('PASS: official editor roundtrip preserves image/movie/TTS and all non-beat MulmoScript config');
+          JS
       - name: Build static browser editor (no API calls, secrets or backend)
         run: npm --prefix sns-editor run build
       - name: Verify static output
