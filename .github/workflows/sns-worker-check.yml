@@ -1,0 +1,30 @@
+name: SNS secure relay offline checks
+on:
+  push:
+    branches:
+      - restart/mulmocast-upstream-free-ai
+    paths:
+      - 'sns-worker/**'
+      - '.github/workflows/sns-worker-check.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Install relay dependencies
+        run: npm --prefix sns-worker install --no-audit --no-fund
+      - name: Offline free-only and authorization checks
+        run: npm --prefix sns-worker test
+      - name: Build original browser editor for same-origin Worker assets
+        run: |
+          npm --prefix sns-editor install --no-audit --no-fund
+          PUBLIC_BASE_PATH=/ npm --prefix sns-editor run build
+      - name: Bundle secure Worker without deployment
+        run: npm --prefix sns-worker run check
