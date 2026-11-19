@@ -20,6 +20,19 @@ jobs:
         run: yarn install --frozen-lockfile
       - name: Build original MulmoCast
         run: yarn build
+      - name: Offline smoke check - editable MulmoScript goes straight to original movie CLI
+        run: |
+          mkdir -p output
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          const src = JSON.parse(fs.readFileSync('docs/sns-video/examples/experimental-three-cut-onepass-narrated.json','utf8'));
+          src.title = 'User-edited script (offline check)';
+          src.beats[0].text = '編集テスト';
+          fs.writeFileSync('output/sns-edited-direct.json', JSON.stringify(src, null, 2));
+          JS
+          node lib/cli/bin.js movie output/sns-edited-direct.json --estimate > output/direct-script-estimate.log
+          test -s output/direct-script-estimate.log
+          echo 'PASS: edited JSON accepted by native MulmoCast movie --estimate without Groq or image/movie/TTS API requests'
       - name: Typecheck tests
         run: yarn typecheck:test
       - name: Diagnose upstream nested scripting GraphAI data path without any API
