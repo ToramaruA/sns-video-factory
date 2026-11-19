@@ -24,8 +24,8 @@ jobs:
           node-version: '24'
       - name: Require Cloudflare deployment credentials
         run: |
-          test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing SNS_CF_WORKER_DEPLOY_TOKEN" >&2; exit 1; }}
-          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Missing CLOUDFLARE_ACCOUNT_ID" >&2; exit 1; }}
+          test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing SNS_CF_WORKER_DEPLOY_TOKEN" >&2; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Missing CLOUDFLARE_ACCOUNT_ID" >&2; exit 1; }
       - name: Build original browser editor with root assets
         run: |
           npm --prefix sns-editor install --no-audit --no-fund
@@ -44,9 +44,9 @@ jobs:
           TEAM: ${{ secrets.SNS_CF_ACCESS_TEAM_DOMAIN }}
           AUD: ${{ secrets.SNS_CF_ACCESS_AUD }}
         run: |
-          test -n "$PAT" || { echo "Missing SNS_GITHUB_ACTIONS_PAT" >&2; exit 1; }}
-          test -n "$TEAM" || { echo "Missing SNS_CF_ACCESS_TEAM_DOMAIN" >&2; exit 1; }}
-          test -n "$AUD" || { echo "Missing SNS_CF_ACCESS_AUD" >&2; exit 1; }}
+          test -n "$PAT" || { echo "Missing SNS_GITHUB_ACTIONS_PAT" >&2; exit 1; }
+          test -n "$TEAM" || { echo "Missing SNS_CF_ACCESS_TEAM_DOMAIN" >&2; exit 1; }
+          test -n "$AUD" || { echo "Missing SNS_CF_ACCESS_AUD" >&2; exit 1; }
       - name: Configure Cloudflare Worker secrets
         if: inputs.activate_secure_api == true
         env:
