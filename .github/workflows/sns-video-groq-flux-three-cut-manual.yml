@@ -8,8 +8,13 @@ on:
         type: string
         required: true
         default: 'クリスマスの小さな音楽会を紹介する、温かい雰囲気の短い縦型SNS動画。'
+      script_path:
+        description: 'Optional: existing JSON MulmoScript path committed to this branch. Skips Groq entirely. Example: docs/sns-video/examples/experimental-three-cut-onepass-narrated.json'
+        type: string
+        required: false
+        default: ''
       render_movie:
-        description: 'Generate the complete MP4 after checking the MulmoScript. OFF runs Groq scripting only.'
+        description: 'ON makes MP4. OFF only creates (or validates) MulmoScript.'
         type: boolean
         required: false
         default: false
@@ -48,14 +53,15 @@ concurrency:
 
 jobs:
   brief-to-mulmoscript:
-    if: inputs.confirm_groq_free_plan == true
+    if: inputs.script_path != '' || inputs.confirm_groq_free_plan == true
     runs-on: ubuntu-latest
     timeout-minutes: 35
     env:
       SNS_VIDEO_BRIEF: ${{ inputs.brief }}
+      SNS_VIDEO_SCRIPT_PATH: ${{ inputs.script_path }}
       RENDER_MOVIE: ${{ inputs.render_movie && '1' || '0' }}
       SNS_VIDEO_FREE_ONLY: '1'
-      SNS_VIDEO_GROQ_FREE_PLAN_CONFIRMED: '1'
+      SNS_VIDEO_GROQ_FREE_PLAN_CONFIRMED: ${{ inputs.confirm_groq_free_plan && '1' || '0' }}
       GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       LLM_GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
       SNS_VIDEO_CLOUDFLARE_FREE_PLAN_CONFIRMED: ${{ inputs.confirm_cloudflare_free_plan && '1' || '0' }}
@@ -78,15 +84,18 @@ jobs:
       HF_HUB_DISABLE_IMPLICIT_TOKEN: '1'
     steps:
       - uses: actions/checkout@v4
-      - name: Preflight Free accounts and opt-in BEFORE Groq request
+      - name: Preflight selected Free accounts and consent BEFORE any API request
         env:
           CF_OK: ${{ inputs.confirm_cloudflare_free_plan && '1' || '0' }}
           GEMINI_OK: ${{ inputs.confirm_gemini_free_tier && '1' || '0' }}
           WAN_OK: ${{ inputs.confirm_zerogpu_trial && '1' || '0' }}
           UPLOAD_OK: ${{ inputs.confirm_third_party_demo_upload && '1' || '0' }}
         run: |
-          test -n "$GROQ_API_KEY" || { echo 'GROQ_API_KEY secret missing. Configure a Free Plan Groq key first.' >&2; exit 1; }
-          test -n "$SNS_VIDEO_BRIEF" || { echo 'Enter a brief.' >&2; exit 1; }
+          if [ -z "$SNS_VIDEO_SCRIPT_PATH" ]; then
+            test "$SNS_VIDEO_GROQ_FREE_PLAN_CONFIRMED" = 1 || { echo 'Confirm Groq Free Plan before script generation.' >&2; exit 1; }
+            test -n "$GROQ_API_KEY" || { echo 'GROQ_API_KEY secret missing. Configure a Free Plan Groq key first.' >&2; exit 1; }
+            test -n "$SNS_VIDEO_BRIEF" || { echo 'Enter a brief.' >&2; exit 1; }
+          fi
           if [ "$RENDER_MOVIE" = 1 ]; then
             for consent in "$CF_OK" "$GEMINI_OK" "$WAN_OK" "$UPLOAD_OK"; do
               test "$consent" = 1 || { echo 'All four movie-related confirmations are required before ANY API requests.' >&2; exit 1; }
@@ -106,6 +115,7 @@ jobs:
           yarn install --frozen-lockfile
           yarn build
       - name: Write the user's brief to a local text input
+        if: inputs.script_path == ''
         run: |
           mkdir -p output/sns-script
           python3 - <<'PY'
@@ -115,6 +125,7 @@ jobs:
           pathlib.Path('output/sns-script/brief.txt').write_text(brief + '\n', encoding='utf-8')
           PY
       - name: Original MulmoCast scripting with Groq Free (no bespoke planner)
+        if: inputs.script_path == ''
         run: |
           node lib/cli/bin.js tool scripting --input-file output/sns-script/brief.txt --template sns_free_vertical --llm groq --llm_model openai/gpt-oss-20b --outdir output/sns-script --script sns-plan
           shopt -s nullglob
@@ -122,7 +133,24 @@ jobs:
           test "${#files[@]}" -eq 1 || { echo 'Groq did not write exactly one MulmoScript JSON.' >&2; exit 1; }
           echo "PLAN_FILE=${files[0]}" >> "$GITHUB_ENV"
           echo "PLAN_NAME=$(basename "${files[0]}" .json)" >> "$GITHUB_ENV"
+      - name: Use an existing, editable MulmoScript WITHOUT a Groq call
+        if: inputs.script_path != ''
+        run: |
+          python3 - <<'PY'
+          import os, pathlib, re, subprocess
+          raw = os.environ['SNS_VIDEO_SCRIPT_PATH']
+          assert re.fullmatch(r'[a-zA-Z0-9_./-]+\.json', raw), 'Only repository-local JSON file paths are accepted'
+          root = pathlib.Path.cwd().resolve()
+          file = (root / raw).resolve()
+          assert file.is_relative_to(root) and file.is_file(), 'MulmoScript must exist in the checked-out repository'
+          rel = file.relative_to(root).as_posix()
+          subprocess.run(['git', 'ls-files', '--error-unmatch', rel], check=True, stdout=subprocess.DEVNULL)
+          with open(os.environ['GITHUB_ENV'], 'a', encoding='utf8') as env:
+              env.write(f'PLAN_FILE={rel}\nPLAN_NAME={file.stem}\n')
+          print('PASS: native MulmoScript selected without Groq:', rel)
+          PY
       - name: Upload generated editable MulmoScript (available even when video rendering is disabled)
+        if: inputs.script_path == ''
         uses: actions/upload-artifact@v4
         with:
           name: free-groq-mulmoscript
@@ -131,7 +159,16 @@ jobs:
             output/sns-script/sns-plan-*.json
           if-no-files-found: error
           retention-days: 5
+      - name: Upload manually edited MulmoScript
+        if: inputs.script_path != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: free-existing-mulmoscript
+          path: ${{ inputs.script_path }}
+          if-no-files-found: error
+          retention-days: 5
       - name: Validate generated MulmoScript and reject paid models before MP4
+        if: inputs.script_path == ''
         run: |
           node --input-type=module <<'JS'
           import fs from 'node:fs';
@@ -157,6 +194,17 @@ jobs:
           requireSetting(!data.audioParams?.bgm && !data.imageParams?.images && !data.movieParams?.referenceImages, 'no external or paid resources');
           console.log('PASS: Original MulmoScript schema, 3 real I2V beats, Groq->Cloudflare/Wan/Gemini Free settings');
           JS
+      - name: Validate manually edited MulmoScript (native schema, no Groq)
+        if: inputs.script_path != ''
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import { mulmoScriptSchema } from './lib/types/schema.js';
+          const script = mulmoScriptSchema.parse(JSON.parse(fs.readFileSync(process.env.PLAN_FILE, 'utf8')));
+          console.log('PASS: native MulmoScript parsed; beats:', script.beats.length);
+          // The original movie command's free-only guard checks the complete
+          // resolved providers and all beats before calling any external API.
+          JS
       - uses: actions/setup-python@v5
         if: inputs.render_movie == true
         with:
@@ -170,12 +218,17 @@ jobs:
           node --input-type=module -e 'import puppeteer from "puppeteer"; const b=await puppeteer.launch({args:["--no-sandbox","--disable-setuid-sandbox"]}); await b.close();'
           python3 -m venv .venv
           .venv/bin/python -m pip install --disable-pip-version-check gradio_client==2.7.2
-      - name: Original MulmoCast movie renders Groq's editable MulmoScript
+      - name: Original MulmoCast movie renders the selected MulmoScript
         if: inputs.render_movie == true
         run: |
           node lib/cli/bin.js movie "$PLAN_FILE"
-          video="output/${PLAN_NAME}_ja__ja.mp4"
+          video="$(node --input-type=module -e 'import fs from "node:fs"; import {mulmoScriptSchema} from "./lib/types/schema.js"; const s=mulmoScriptSchema.parse(JSON.parse(fs.readFileSync(process.env.PLAN_FILE,"utf8"))); console.log("output/"+process.env.PLAN_NAME+"_"+s.lang+(s.captionParams?.lang?"__"+s.captionParams.lang:"")+".mp4")')"
           test -s "$video"
+          if [ -n "$SNS_VIDEO_SCRIPT_PATH" ]; then
+            ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height -of default=noprint_wrappers=1 "$video"
+            echo "PASS: user-edited MulmoScript => original MulmoCast MP4; no Groq or paid fallback"
+            exit 0
+          fi
           dims="$(ffprobe -v error -select_streams v:0 -show_entries stream=width,height -of csv=s=x:p=0 "$video")"
           test "$dims" = '720x1280'
           for i in 0 1 2; do
@@ -190,7 +243,7 @@ jobs:
         with:
           name: free-groq-full-mulmocast-video
           path: |
-            output/sns-plan-*_ja__ja.mp4
-            output/images/sns-plan-*/
+            output/*.mp4
+            output/images/
           if-no-files-found: error
           retention-days: 3
