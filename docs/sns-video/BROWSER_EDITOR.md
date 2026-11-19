@@ -38,7 +38,7 @@ npm run build
 
 GitHub Actions [SNS MulmoCast browser editor](https://github.com/ToramaruA/sns-video-factory/actions/workflows/sns-editor-build.yml) がpush時にビルド確認し、成果物を `sns-beat-editor-static` として添付する。
 
-**GitHub Pagesを公開する場合**、まずリポジトリの Settings → Pages で Source を **GitHub Actions** にする。次に上記ワークフローを `workflow_dispatch` で実行すると `deploy-pages` が走る。公開URLはGitHubが表示する deployment の `page_url` を正とする。公開完了を確認するまではURLを稼働中として案内しない。
+**GitHub Pages公開の現在地：** ビルドは成功。ただし [実行44495219259](https://github.com/ToramaruA/sns-video-factory/actions/runs/44495219259) の `deploy-pages` は GitHub Pages がまだ有効になっていないため `actions/configure-pages@v5` で失敗。**利用者が1度だけ**リポジトリの **Settings → Pages → Build and deployment → Source を「GitHub Actions」に変更**する必要がある。設定後、失敗した `deploy-pages` ジョブを再実行すれば公開を試せる。GitHub側の環境保護で開発ブランチの公開が拒否された場合は、その設定を確認する（勝手にmainへマージしない）。成功したdeploymentが返す `page_url` を正とする。公開完了前にURLを稼働中とは案内しない。
 
 ## 留意事項
 
