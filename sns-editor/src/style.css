@@ -52,3 +52,5 @@ h1 { font-size: clamp(26px, 4vw, 34px); font-weight: 760; margin: 0 0 9px; lette
   .sns-toolbar, .sns-workspace { padding: 14px; border-radius: 9px; }
   .editor-zone { height: 710px; }
 }
+
+.brief-input { width: 100%; border: 1px solid #cedbe0; border-radius: 7px; padding: 12px; font: 13px/1.7 inherit; line-height: 1.7; resize: vertical; margin-bottom: 12px; }
