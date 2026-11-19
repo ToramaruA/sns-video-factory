@@ -33,6 +33,30 @@ jobs:
           node lib/cli/bin.js movie output/sns-edited-direct.json --estimate > output/direct-script-estimate.log
           test -s output/direct-script-estimate.log
           echo 'PASS: edited JSON accepted by native MulmoCast movie --estimate without Groq or image/movie/TTS API requests'
+      - name: Validate pasted MulmoScript workflow input (offline)
+        run: |
+          node --input-type=module <<'JS'
+          import fs from 'node:fs';
+          import YAML from 'yaml';
+          import { mulmoScriptSchema } from './lib/types/schema.js';
+          const wf = YAML.parse(fs.readFileSync('.github/workflows/sns-video-groq-flux-three-cut-manual.yml', 'utf8'));
+          const inputs = wf.on.workflow_dispatch.inputs;
+          if (!inputs.script_json || !inputs.script_path || !inputs.render_movie) throw Error('Missing input choices');
+          const steps = wf.jobs['brief-to-mulmoscript'].steps;
+          const usePasted = steps.find(s => s.name === 'Use pasted MulmoScript JSON WITHOUT Groq or source-code commits');
+          const useGroq = steps.find(s => s.name === 'Original MulmoCast scripting with Groq Free (no bespoke planner)');
+          if (usePasted?.if !== "inputs.script_json != ''" || !useGroq?.if.includes("inputs.script_json == ''")) throw Error('Pasted script incorrectly invokes Groq');
+          const sample = JSON.parse(fs.readFileSync('docs/sns-video/examples/experimental-three-cut-onepass-narrated.json','utf8'));
+          sample.beats[0].text = '編集テスト：貼り付けたMulmoScript';
+          const pasted = JSON.stringify(sample);
+          fs.mkdirSync('output/sns-script', { recursive: true });
+          fs.writeFileSync('output/sns-script/manual-script.json', JSON.stringify(JSON.parse(pasted), null, 2));
+          const parsed = mulmoScriptSchema.parse(JSON.parse(fs.readFileSync('output/sns-script/manual-script.json','utf8')));
+          if (parsed.beats[0].text !== sample.beats[0].text) throw Error('Pasted edit was lost');
+          console.log('PASS: pasted MulmoScript retains edits, native schema valid, Groq skipped');
+          JS
+          node lib/cli/bin.js movie output/sns-script/manual-script.json --estimate > output/sns-script/manual-estimate.log
+          test -s output/sns-script/manual-estimate.log
       - name: Typecheck tests
         run: yarn typecheck:test
       - name: Diagnose upstream nested scripting GraphAI data path without any API
