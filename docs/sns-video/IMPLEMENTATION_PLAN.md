@@ -1,5 +1,8 @@
 # SNS動画ツール — 開発方針（正本）
 
+> **2026-11-20 最新状況（従来の旧進捗欄より優先）:** GitHub PagesのブラウザMulmoScript編集画面は公開・ビルド成功。企画文からGroqで台本生成、編集済みMulmoScriptから純正MulmoCastでMP4生成は従来のActionsで実通信成功。ブラウザから2工程を安全に起動し進捗・成果物を取得するVue画面とCloudflare Access JWT認証付き小型Worker中継を追加した。Workerの認証・同意・GitHub dispatch/状態/アーティファクト取得をモックした統合テスト、Webビルド・Workerバンドルは [#44648541472](https://github.com/ToramaruA/sns-video-factory/actions/runs/44648541472) で成功。**Cloudflareへは未デプロイ、ブラウザからの実APIワンパス操作は未確認。** GitHub Actionsのmanual deploy workflowはデフォルトmainに動作なしの登録用ファイルを置き、作業ブランチ側に実実行を維持。次は利用者がCloudflare Workerのデプロイ用APIトークンを登録→Accessで限定ユーザーを許可→GitHubの狭いActions権限トークンを登録→保護されたWorkerからの実通信を検証する。動画AIのI2V先のWan公開デモは商用・SNS宣伝・継続利用が未承認のため、本番完成判定不可。独自エンジンは作らない。詳しくは [sns-worker/README.md](../../sns-worker/README.md)。
+
+
 更新日: 2026-11-18  
 ブランチ: `restart/mulmocast-upstream-free-ai`  
 **目的: MulmoCastをそのまま利用し、利用料金が発生するAIの部分だけを、条件を満たす無料AIへ置き換える。**

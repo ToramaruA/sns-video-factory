@@ -1,3 +1,11 @@
+## 最新の接続・公開状況（2026-11-20）
+
+- ブラウザ版には「AIで台本を生成」「動画を生成して確認」、GitHub Actionsの状態表示、動画ZIPからMP4の再生・保存を行う実装を追加。既存のMulmoCast CLIとワークフローを再利用し、台本・動画エンジンは新設していない。
+- GitHub Pages版はAPI認証のない静的編集サイトなので、引き続きコピペ→GitHub Actionsの手動経路を表示。安全な直接生成は、Cloudflare Access付きの同一オリジンWorker版でだけ利用可能。
+- Cloudflare Worker中継、署名付きAccess JWT、GitHubのworkflow_dispatch・run・artifactの通信を模擬した統合テストを含めて [#44648541472](https://github.com/ToramaruA/sns-video-factory/actions/runs/44648541472) 成功。
+- **本番Workerは未公開**。SecretsとAccess設定後の実APIテストが必要。無料Wan公開デモの権利・継続性は未確定で試作範囲。
+- 公開設定手順の正本は [sns-worker/README.md](../../sns-worker/README.md)。
+
 # ブラウザからMulmoScriptを編集する（2026-11-19）
 
 ## 方針
