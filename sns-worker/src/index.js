@@ -1,4 +1,4 @@
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import { createRemoteJWKSet, jwtVerify, customFetch } from "jose";
 const API="https://api.github.com/repos/ToramaruA/sns-video-factory";
 const BRANCH="restart/mulmocast-upstream-free-ai";
 const WORKFLOW="sns-video-groq-flux-three-cut-manual.yml";
@@ -16,7 +16,7 @@ async function authorize(req,env){
     const domain=new URL(value.startsWith("https://")?value:"https://"+value);
     if(domain.protocol!=="https:"||domain.pathname!=="/"||domain.username||domain.password)throw Error("bad domain");
     let keys=JWKS.get(domain.origin);
-    if(!keys){keys=createRemoteJWKSet(new URL(domain.origin+"/cdn-cgi/access/certs"));JWKS.set(domain.origin,keys)}
+    if(!keys){keys=createRemoteJWKSet(new URL(domain.origin+"/cdn-cgi/access/certs"),{ [customFetch]: (...args) => fetch(...args) });JWKS.set(domain.origin,keys)}
     const out=await jwtVerify(token,keys,{issuer:domain.origin,audience:env.CF_ACCESS_AUD});
     if(!out.payload.sub)throw Error("missing identity");
   }catch{fail(401,"Cloudflare Access token invalid")}
