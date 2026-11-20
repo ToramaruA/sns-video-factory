@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 15
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.SNS_CF_WORKER_DEPLOY_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.SNS_CF_ACCOUNT_ID }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -25,7 +25,7 @@ jobs:
       - name: Require Cloudflare deployment credentials
         run: |
           test -n "$CLOUDFLARE_API_TOKEN" || { echo "Missing SNS_CF_WORKER_DEPLOY_TOKEN" >&2; exit 1; }
-          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Missing CLOUDFLARE_ACCOUNT_ID" >&2; exit 1; }
+          test -n "$CLOUDFLARE_ACCOUNT_ID" || { echo "Missing SNS_CF_ACCOUNT_ID" >&2; exit 1; }
       - name: Build original browser editor with root assets
         run: |
           npm --prefix sns-editor install --no-audit --no-fund
