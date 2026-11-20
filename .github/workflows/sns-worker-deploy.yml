@@ -1,0 +1,23 @@
+# Bootstrap only: GitHub displays workflow_dispatch only for files present on default branch.
+# Select "restart/mulmocast-upstream-free-ai" in the branch dropdown to run the full
+# implementation on that branch. This main-branch stub never deploys anything.
+name: SNS Cloudflare browser generation — manual secure deployment
+on:
+  workflow_dispatch:
+    inputs:
+      activate_secure_api:
+        description: 'OFF: deploy with API disabled. ON: after Access setup, activate authenticated API.'
+        type: boolean
+        default: false
+        required: false
+permissions:
+  contents: read
+jobs:
+  bootstrap-only:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: No deployment on main — select the development branch
+        run: |
+          echo 'No Cloudflare credentials used on main.'
+          echo 'For the actual deployment select branch restart/mulmocast-upstream-free-ai in Run workflow.'
