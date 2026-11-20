@@ -52,7 +52,7 @@ test("fully authenticated workflow dispatch, status, artifacts and zip; no netwo
     throw Error("Unexpected network fetch: " + url);
   };
   const call = (path, init = {}) => worker.fetch(new Request("https://app.workers.dev" + path, {
-    headers: { "Cf-Access-Jwt-Assertion": jwt, ...init.headers }, ...init,
+    ...init, headers: { "Cf-Access-Jwt-Assertion": jwt, ...init.headers },
   }), auth);
   try {
     const noOrigin = await call("/api/runs", { method: "POST", headers: { "content-type": "application/json" }, body: '{"mode":"plan"}' });
