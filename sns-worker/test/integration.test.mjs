@@ -17,7 +17,7 @@ test("fully authenticated workflow dispatch, status, artifacts and zip; no netwo
   const originalFetch = globalThis.fetch;
   const seen = [];
   globalThis.fetch = async (request, options) => {
-    const url = typeof request === "string" ? request : request.url;
+    const url = typeof request === "string" ? request : request instanceof URL ? request.href : request.url;
     seen.push(url);
     if (url === issuer + "/cdn-cgi/access/certs") {
       return new Response(JSON.stringify({ keys: [pub] }), { headers: { "content-type": "application/json" } });
