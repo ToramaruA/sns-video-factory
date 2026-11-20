@@ -12,7 +12,7 @@
 
 ## 最短の公開手順 (GitHub画面で実施)
 
-第1段階。Cloudflare DashboardのWorkers & Pagesで `sns-video-factory-secure` という空のWorkerを先に作る（公式の新しい権限モデルでは、API Tokenで新規Workerを作るにはWorkers製品全体へのAdmin権限が必要。手動で箱だけ作れば、Worker単位に限定したEditor権限で安全にデプロイできる）。次にCloudflareのAPI Tokenを、このWorker限定のWorkers Editorとして発行する。GitHubのSettings > Secrets and variables > Actionsに `SNS_CF_WORKER_DEPLOY_TOKEN` として保存。既存の `CLOUDFLARE_ACCOUNT_ID` は流用。Actionsで `SNS Cloudflare browser generation — manual secure deployment` を選び、ブランチ `restart/mulmocast-upstream-free-ai`、`activate_secure_api=OFF` で実行する。APIは必要なSecretが揃わない限り動かない。この段階でWorkerの正式なスクリプトとブラウザ画面が公開されるがAPI実行は拒否される。もしWorkerを手動作成せずに初回自動作成する場合はWorkers製品全体のAdmin権限が一時的に必要となり、リスクが高いため推奨しない。
+第1段階。Cloudflare DashboardのWorkers & Pagesで `sns-video-factory-secure` という空のWorkerを先に作る（公式の新しい権限モデルでは、API Tokenで新規Workerを作るにはWorkers製品全体へのAdmin権限が必要。手動で箱だけ作れば、Worker単位に限定したEditor権限で安全にデプロイできる）。次にCloudflareのAPI Tokenを、このWorker限定のWorkers Editorとして発行する。GitHubのSettings > Secrets and variables > Actionsに `SNS_CF_WORKER_DEPLOY_TOKEN` として保存。**新設したSNS用CloudflareアカウントのAccount IDを、別のSecret `SNS_CF_ACCOUNT_ID` として保存する。** 既存の `CLOUDFLARE_ACCOUNT_ID` は画像AI用の設定として変更しない（Sound Lab／ゲームなど他の用途を壊さない）。デプロイ専用トークンも新SNSアカウントに限定する。Actionsで `SNS Cloudflare browser generation — manual secure deployment` を選び、ブランチ `restart/mulmocast-upstream-free-ai`、`activate_secure_api=OFF` で実行する。APIは必要なSecretが揃わない限り動かない。この段階でWorkerの正式なスクリプトとブラウザ画面が公開されるがAPI実行は拒否される。もしWorkerを手動作成せずに初回自動作成する場合はWorkers製品全体のAdmin権限が一時的に必要となり、リスクが高いため推奨しない。
 
 第2段階。Cloudflare Dashboardの Workers & Pages から sns-video-factory-secure を選択し、Accessタブで Protect this Worker behind Access を有効にする。Production and previewの両方を保護し、許可する利用者のメールアドレスだけを登録する。Cloudflare AccessのAudience tagとチームドメインを控える。
 
